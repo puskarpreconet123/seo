@@ -8,6 +8,17 @@ import { useSeo } from "@/context/SeoContext";
 
 export default function DashboardLayoutShell({ children }) {
   const { currentDomain, handleSearch, seoData, isLoading, error, handleRefresh } = useSeo();
+  const [isScrolled, setIsScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 64);
+    };
+    window.addEventListener("scroll", handleScroll);
+    // Call once initially to set initial state
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const renderInnerContent = () => {
     if (isLoading) {
@@ -43,22 +54,22 @@ export default function DashboardLayoutShell({ children }) {
   };
 
   return (
-    <div className="flex h-screen bg-semrush-lightBg text-slate-800 overflow-hidden font-sans w-full">
-      {/* Sidebar navigation */}
-      <Sidebar />
+    <div className="min-h-screen bg-semrush-lightBg text-slate-800 font-sans w-full flex flex-col">
+      {/* Top bar header */}
+      <TopBar
+        currentDomain={currentDomain}
+        onSearch={handleSearch}
+        lastUpdated={seoData?.lastUpdated}
+        isLoading={isLoading}
+      />
 
-      {/* Main viewport */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top bar header */}
-        <TopBar
-          currentDomain={currentDomain}
-          onSearch={handleSearch}
-          lastUpdated={seoData?.lastUpdated}
-          isLoading={isLoading}
-        />
+      {/* Main viewport area */}
+      <div className="flex flex-1 relative items-start w-full">
+        {/* Sidebar navigation */}
+        <Sidebar isScrolled={isScrolled} />
 
         {/* Scrollable page body */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 p-6 min-w-0">
           <div className="max-w-7xl mx-auto space-y-6">
             {/* Quick Header */}
             {!isLoading && seoData && (

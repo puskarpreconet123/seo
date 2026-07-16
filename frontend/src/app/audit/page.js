@@ -1,27 +1,131 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useSeo } from "@/context/SeoContext";
 import SiteAuditWidget from "@/components/SiteAuditWidget";
-import { Layers } from "lucide-react";
+import SeoStatsOverview from "@/components/SeoStatsOverview";
+import SeoScoreCharts from "@/components/SeoScoreCharts";
+import SeoPriorityActionPlan from "@/components/SeoPriorityActionPlan";
+import ConsolidatedSeoChecklist from "@/components/ConsolidatedSeoChecklist";
+import PagePerformanceAnalysis from "@/components/PagePerformanceAnalysis";
+import PerformanceCharts from "@/components/PerformanceCharts";
+import RobotsSitemapAnalyzer from "@/components/RobotsSitemapAnalyzer";
+import SchemaStructuredDataAnalyzer from "@/components/SchemaStructuredDataAnalyzer";
+import { Layers, RefreshCw, Download, Share2, FileText, Monitor, CheckCircle } from "lucide-react";
 
 export default function AuditPage() {
   const { seoData } = useSeo();
+  const [activeTab, setActiveTab] = useState("overview");
+
+  const tabs = [
+    { id: "overview", label: "Overview" },
+    { id: "issues", label: "Issues & Action Plan" },
+    { id: "performance", label: "Site Performance" },
+    { id: "crawlability", label: "Crawlability & Indexing" },
+    { id: "schema", label: "Structured Data" },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-        <div className="text-left">
-          <h2 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <Layers className="w-6 h-6 text-emerald-500" />
-            Technical Site Audit Logs
-          </h2>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">
-            Optimize crawl health and fix critical warnings or technical errors
-          </p>
+      {/* SEMrush Style Header */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Layers className="w-5 h-5 text-emerald-500" />
+              <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+                Site Audit: <span className="text-blue-600 font-semibold">preconetindia.com</span>
+              </h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-400">
+              <span>preconetindia.com</span>
+              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+              <span>Updated: Wed, Jul 15, 2026</span>
+              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+              <span className="flex items-center gap-1">
+                <Monitor className="w-3.5 h-3.5" /> Desktop
+              </span>
+              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+              <span>JS rendering: Disabled</span>
+              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+              <span className="text-slate-500 font-bold">Pages crawled: 43/100</span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+              <RefreshCw className="w-3.5 h-3.5" /> Rerun campaign
+            </button>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+              <FileText className="w-3.5 h-3.5" /> PDF
+            </button>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+              <Download className="w-3.5 h-3.5" /> Export
+            </button>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+              <Share2 className="w-3.5 h-3.5" /> Share
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex items-center overflow-x-auto gap-6 pt-4 scrollbar-none">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`pb-1 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
+                  isActive
+                    ? "border-blue-600 text-blue-600 font-bold"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
-      <SiteAuditWidget auditData={seoData.website.technicalAudit} />
+
+      {/* Tab Contents */}
+      <div className="space-y-6">
+        {activeTab === "overview" && (
+          <div className="space-y-6">
+            <SeoStatsOverview />
+            <SeoScoreCharts />
+            <SiteAuditWidget auditData={seoData.website.technicalAudit} />
+          </div>
+        )}
+
+        {activeTab === "issues" && (
+          <div className="space-y-6">
+            <SeoPriorityActionPlan />
+            <ConsolidatedSeoChecklist />
+          </div>
+        )}
+
+        {activeTab === "performance" && (
+          <div className="space-y-6">
+            <PagePerformanceAnalysis />
+            <PerformanceCharts />
+          </div>
+        )}
+
+        {activeTab === "crawlability" && (
+          <div className="space-y-6">
+            <RobotsSitemapAnalyzer />
+          </div>
+        )}
+
+        {activeTab === "schema" && (
+          <div className="space-y-6">
+            <SchemaStructuredDataAnalyzer />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,124 +1,97 @@
 import React from "react";
-import { AlertCircle, AlertTriangle, Info, ShieldCheck } from "lucide-react";
+import { Gauge } from "lucide-react";
 
 export default function SiteAuditWidget({ auditData }) {
-  if (!auditData) return null;
-
-  const score = auditData.healthScore;
-  
-  // Calculate SVG stroke-dashoffset for the health score gauge
-  const radius = 50;
-  const strokeWidth = 8;
-  const circumference = 2 * Math.PI * radius;
-  const dashoffset = circumference - (score / 100) * circumference;
-
-  const getScoreColor = (val) => {
-    if (val >= 90) return "text-emerald-500 stroke-emerald-500";
-    if (val >= 80) return "text-green-500 stroke-green-500";
-    if (val >= 70) return "text-amber-500 stroke-amber-500";
-    return "text-rose-500 stroke-rose-500";
-  };
-
-  const getIssueIcon = (type) => {
-    switch (type) {
-      case "error":
-        return <AlertCircle className="w-4 h-4 text-semrush-danger shrink-0" />;
-      case "warning":
-        return <AlertTriangle className="w-4 h-4 text-semrush-warning shrink-0" />;
-      case "notice":
-      default:
-        return <Info className="w-4 h-4 text-semrush-blue shrink-0" />;
-    }
-  };
-
-  const getIssueTypeBadge = (type) => {
-    switch (type) {
-      case "error":
-        return <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-red-50 text-semrush-danger border border-red-100 uppercase tracking-wide">Error</span>;
-      case "warning":
-        return <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-50 text-semrush-warning border border-amber-100 uppercase tracking-wide">Warning</span>;
-      case "notice":
-      default:
-        return <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-blue-50 text-semrush-blue border border-blue-100 uppercase tracking-wide">Notice</span>;
-    }
-  };
-
   return (
-    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-all duration-200">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-        <h3 className="font-bold text-slate-700 text-sm tracking-tight flex items-center gap-1.5">
-          <ShieldCheck className="w-4.5 h-4.5 text-semrush-success" />
-          Site Audit & Health
-        </h3>
-        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Crawl Complete</span>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+      {/* Audit Overview */}
+      <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col w-full h-full">
+        <div className="flex items-center gap-2 mb-12">
+          <Gauge className="w-5 h-5 text-slate-500" strokeWidth={1.5} />
+          <h3 className="font-semibold text-slate-600 text-sm tracking-wide uppercase">
+            Audit Overview
+          </h3>
+        </div>
+
+        <div className="flex flex-col items-center justify-center mb-10">
+          <div className="text-6xl font-light text-slate-800 mb-1">63</div>
+          <div className="text-sm text-slate-500 uppercase tracking-widest mb-6">SEO SCORE</div>
+          <div className="text-2xl font-bold text-slate-900 tracking-tight">Fair Optimization</div>
+        </div>
+
+        <hr className="border-slate-100 mb-6" />
+
+        <div className="space-y-4 text-[15px] mt-auto">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">Website audited</span>
+            <span className="text-slate-800">https://preconetindia.co...</span>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">Final Destination</span>
+            <span className="text-blue-600">https://preconetindia.co...</span>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">Status Code</span>
+            <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
+              200
+            </span>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">Response Time</span>
+            <span className="text-purple-700 font-medium">2602.86 ms</span>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">HTML Payload</span>
+            <span className="text-purple-700 font-medium">40158 bytes</span>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
-        {/* Left: Radial gauge */}
-        <div className="md:col-span-2 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-4 shrink-0">
-          <div className="relative w-32 h-32 flex items-center justify-center">
-            {/* SVG Circle Gauge */}
-            <svg className="w-full h-full transform -rotate-90">
-              {/* Background circle */}
-              <circle
-                cx="64"
-                cy="64"
-                r={radius}
-                className="stroke-slate-100 fill-none"
-                strokeWidth={strokeWidth}
-              />
-              {/* Foreground animated progress circle */}
-              <circle
-                cx="64"
-                cy="64"
-                r={radius}
-                className={`fill-none transition-all duration-1000 ease-out animate-dash ${getScoreColor(score)}`}
-                strokeWidth={strokeWidth}
-                strokeDasharray={circumference}
-                strokeDashoffset={dashoffset}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute text-center">
-              <span className="text-3xl font-extrabold text-slate-800 tracking-tighter">{score}%</span>
-              <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Health Score</div>
+      {/* Issues By Severity */}
+      <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col w-full h-full">
+        <h3 className="font-semibold text-slate-600 text-sm tracking-wide uppercase mb-8">
+          Issues By Severity
+        </h3>
+        
+        <div className="relative flex-1 flex flex-col justify-end mt-4 min-h-[250px]">
+          {/* Y-axis labels and grid lines */}
+          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+            {[14, 12, 10, 8, 6, 4, 2, 0].map((tick) => (
+              <div key={tick} className="flex items-center w-full translate-y-[-50%]">
+                <span className="w-8 text-right text-slate-400 text-sm pr-4 shrink-0">{tick}</span>
+                <div className="flex-1 border-b border-slate-100"></div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Bars Container */}
+          <div className="flex-1 flex flex-col justify-end z-10 pt-4 pb-[1px] ml-8 h-full">
+            <div className="flex items-end justify-around h-full w-full">
+              {/* Passed */}
+              <div className="flex flex-col items-center justify-end w-1/4 h-full relative">
+                <div className="w-full bg-[#3cc494] absolute bottom-0" style={{ height: `${(13/14)*100}%` }}></div>
+              </div>
+              {/* Warnings */}
+              <div className="flex flex-col items-center justify-end w-1/4 h-full relative">
+                <div className="w-full bg-[#f6b042] absolute bottom-0" style={{ height: `${(2/14)*100}%` }}></div>
+              </div>
+              {/* Critical */}
+              <div className="flex flex-col items-center justify-end w-1/4 h-full relative">
+                <div className="w-full bg-[#ef5d5d] absolute bottom-0" style={{ height: `${(1/14)*100}%` }}></div>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Right: Technical Stats & Audit Logs */}
-        <div className="md:col-span-3 space-y-4">
-          {/* Status Breakdown Row */}
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-red-50/50 border border-red-100 p-2 rounded-lg">
-              <div className="text-lg font-extrabold text-semrush-danger">{auditData.errors}</div>
-              <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">Errors</div>
-            </div>
-            <div className="bg-amber-50/50 border border-amber-100 p-2 rounded-lg">
-              <div className="text-lg font-extrabold text-semrush-warning">{auditData.warnings}</div>
-              <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">Warnings</div>
-            </div>
-            <div className="bg-blue-50/50 border border-blue-100 p-2 rounded-lg">
-              <div className="text-lg font-extrabold text-semrush-blue">{auditData.notices}</div>
-              <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">Notices</div>
-            </div>
-          </div>
-
-          {/* Audit Logs list */}
-          <div className="space-y-2">
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top Audit Recommendations</h4>
-            <div className="space-y-2 max-h-[145px] overflow-y-auto pr-1">
-              {auditData.topIssues.map((issue, idx) => (
-                <div key={idx} className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100 hover:border-slate-200 transition-colors">
-                  {getIssueIcon(issue.type)}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-slate-600 font-medium leading-tight truncate">{issue.message}</p>
-                  </div>
-                  {getIssueTypeBadge(issue.type)}
-                </div>
-              ))}
-            </div>
-          </div>
+        
+        {/* X-axis labels */}
+        <div className="flex justify-around ml-8 mt-4 text-slate-500 text-sm">
+          <div className="w-1/4 text-center">Passed</div>
+          <div className="w-1/4 text-center">Warnings</div>
+          <div className="w-1/4 text-center">Critical</div>
         </div>
       </div>
     </div>

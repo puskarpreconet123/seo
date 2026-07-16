@@ -12,7 +12,16 @@ export default function TopBar({ currentDomain, onSearch, lastUpdated, isLoading
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10">
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10 gap-6">
+      {/* Brand Logo */}
+      <div className="flex items-center gap-2 shrink-0">
+        <img
+          src="/logo.png"
+          alt="RankGenie Logo"
+          className="h-14 w-auto object-contain"
+        />
+      </div>
+
       {/* Search form */}
       <form onSubmit={handleSubmit} className="flex-1 max-w-lg">
         <div className="relative">
@@ -70,7 +79,7 @@ export default function TopBar({ currentDomain, onSearch, lastUpdated, isLoading
               <User className="w-4.5 h-4.5" />
             </div>
             <div className="hidden sm:flex flex-col text-left">
-              <span className="text-xs font-bold text-slate-800 leading-none">Puskal S.</span>
+              <span className="text-xs font-bold text-slate-800 leading-none">Puskar Das</span>
               <span className="text-[10px] text-slate-400 font-semibold mt-0.5">Administrator</span>
             </div>
           </div>

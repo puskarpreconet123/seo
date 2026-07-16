@@ -14,10 +14,11 @@ import {
   ChevronLeft,
   TrendingUp,
   Home,
-  Sparkles
+  Sparkles,
+  Image
 } from "lucide-react";
 
-export default function Sidebar() {
+export default function Sidebar({ isScrolled }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -66,10 +67,10 @@ export default function Sidebar() {
           ]
         },
         {
-          title: "Keyword Research",
+          title: "Others",
           items: [
-            { id: "keywords", name: "Keyword Manager", icon: KeyRound },
-            { id: "keyword-strategy", name: "Keyword Strategy Builder", icon: FileSpreadsheet },
+            { id: "content-seo", name: "Content SEO", icon: Sparkles },
+            { id: "image-seo", name: "Image SEO", icon: Image },
           ]
         }
       ]
@@ -188,19 +189,17 @@ export default function Sidebar() {
   const selectedToolkit = toolkits.find(t => t.id === selectedToolkitId);
 
   return (
-    <div className="flex h-full shrink-0 z-20 select-none">
+    <div
+      className="sticky top-0 shrink-0 z-20 select-none flex transition-all duration-300"
+      style={{
+        height: isScrolled ? "100vh" : "calc(100vh - 64px)",
+      }}
+    >
       {/* Primary Narrow Sidebar Column */}
       <aside className="w-[60px] bg-slate-50 border-r border-slate-200 flex flex-col justify-between shrink-0 h-full z-30 overflow-visible">
-        <div className="flex flex-col items-center">
-          {/* Logo */}
-          <div className="h-16 flex items-center justify-center border-b border-slate-200 w-full mb-4">
-            <div className="w-8 h-8 rounded-lg bg-semrush-orange flex items-center justify-center text-white font-bold text-lg shadow-sm">
-              S
-            </div>
-          </div>
-
+        <div className="flex flex-col items-center w-full">
           {/* Navigation Toolkit Icons */}
-          <nav className="flex flex-col items-center gap-3 w-full px-2">
+          <nav className="flex flex-col items-center gap-3 w-full px-2 pt-4">
             {toolkits.filter(t => t.id !== "settings").map((toolkit) => {
               const Icon = toolkit.icon;
               const isActive = selectedToolkitId === toolkit.id;
@@ -350,8 +349,8 @@ export default function Sidebar() {
       >
         <div className="w-[220px] h-full flex flex-col shrink-0">
           {/* Header */}
-          <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 shrink-0">
-            <span className="font-extrabold text-slate-800 tracking-wider text-xs uppercase leading-none">
+          <div className="pt-5 pb-3 flex items-center justify-between px-4 shrink-0">
+            <span className="font-extrabold text-slate-400 tracking-wider text-[10px] uppercase leading-none">
               {selectedToolkit?.name || "Navigation"}
             </span>
             <button
@@ -359,7 +358,7 @@ export default function Sidebar() {
               className="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded transition-colors"
               title="Collapse Panel"
             >
-              <svg width="10px" height="10px" viewBox="0 -0.025 0.75 0.75" id="meteor-icon-kit__regular-double-chevron-left-s" fill="none" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" clipRule="evenodd" d="M0.735 0.615a0.05 0.05 0 0 1 -0.071 0.071l-0.3 -0.3a0.05 0.05 0 0 1 0 -0.071l0.3 -0.3a0.05 0.05 0 1 1 0.071 0.071L0.471 0.35zm-0.35 0a0.05 0.05 0 0 1 -0.071 0.071l-0.3 -0.3a0.05 0.05 0 0 1 0 -0.071l0.3 -0.3a0.05 0.05 0 1 1 0.071 0.071L0.121 0.35z" fill="#758CA3"/></svg>
+              <ChevronLeft className="w-4 h-4" />
             </button>
           </div>
 
