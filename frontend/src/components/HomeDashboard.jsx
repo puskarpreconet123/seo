@@ -71,7 +71,7 @@ export default function HomeDashboard({ seoData, currentDomain }) {
 
         {/* Left Gradient Blur Fade */}
         {showLeftScroll && (
-          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-semrush-lightBg to-transparent pointer-events-none z-10" />
+          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-rankgenie-lightBg to-transparent pointer-events-none z-10" />
         )}
 
         {/* Scrollable Container */}
@@ -96,7 +96,7 @@ export default function HomeDashboard({ seoData, currentDomain }) {
           {/* Card 2: Local */}
           <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-2 shadow-sm hover:shadow-md transition-all duration-200 w-64 min-w-[240px] text-left">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-semrush-orange">
+              <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-rankgenie-orange">
                 <MapPin className="w-4 h-4" />
               </div>
               <span className="font-extrabold text-slate-800 text-sm">Local SEO</span>
@@ -161,7 +161,7 @@ export default function HomeDashboard({ seoData, currentDomain }) {
 
         {/* Right Gradient Blur Fade */}
         {showRightScroll && (
-          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-semrush-lightBg to-transparent pointer-events-none z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-rankgenie-lightBg to-transparent pointer-events-none z-10" />
         )}
 
         {/* Right Scroll Button */}
@@ -341,7 +341,7 @@ export default function HomeDashboard({ seoData, currentDomain }) {
         <div className="flex flex-wrap items-center gap-4">
           <span className="cursor-pointer hover:text-slate-600">See plans and pricing</span>
           <button className="px-4 py-2 bg-[#00c07f] hover:bg-[#00ab70] text-white font-extrabold rounded-lg text-xs shadow-sm transition-colors">
-            Get started with Semrush
+            Get started with Rankgenie
           </button>
         </div>
       </div>

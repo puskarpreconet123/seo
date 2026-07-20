@@ -19,7 +19,7 @@ export default function SettingsPage() {
           .
         </p>
         <div className="bg-orange-50 border border-orange-100 rounded-lg p-4 text-xs space-y-2">
-          <span className="font-bold text-semrush-orange uppercase tracking-wider">How to connect your backend:</span>
+          <span className="font-bold text-rankgenie-orange uppercase tracking-wider">How to connect your backend:</span>
           <p className="leading-relaxed">
             1. Deploy your Node/Express/Mongo backend that crawls search metrics or Google Business Profile API.
             <br />

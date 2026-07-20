@@ -20,6 +20,7 @@
     "express": "^5.2.1",
     "googleapis": "^173.0.0",
     "mongoose": "^9.7.4",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "openai": "^6.48.0"
   }
 }

@@ -4,6 +4,7 @@ const SEORecord = require("../models/SEORecord");
 const GBPRecord = require("../models/GBPRecord");
 const seoScraper = require("../services/seoScraper");
 const gbpService = require("../services/gbpService");
+const aeoGeoService = require("../services/aeoGeoService");
 
 /**
  * Helper to generate stable keywords and traffic statistics for any domain
@@ -52,7 +53,20 @@ const getSeededSEOMetrics = (domain, seed) => {
 // GET /api/seo-data?domain=<domain>
 router.get("/seo-data", async (req, res) => {
   try {
-    const domain = req.query.domain ? req.query.domain.trim().toLowerCase() : "example.com";
+    const rawDomain = req.query.domain ? req.query.domain.trim().toLowerCase() : "example.com";
+    let domain = rawDomain;
+    if (rawDomain.includes("://")) {
+      try {
+        domain = new URL(rawDomain).hostname;
+      } catch (e) {
+        domain = rawDomain.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0];
+      }
+    } else {
+      domain = rawDomain.split("/")[0];
+    }
+    if (domain.startsWith("www.")) {
+      domain = domain.substring(4);
+    }
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const hashString = (str) => {
@@ -77,7 +91,11 @@ router.get("/seo-data", async (req, res) => {
       gbpRecord = await GBPRecord.findOne({ domain });
     }
 
-    const isSeoStale = !seoRecord || seoRecord.updatedAt < oneDayAgo;
+    const isSeoStale = !seoRecord || 
+                       seoRecord.updatedAt < oneDayAgo || 
+                       !seoRecord.aeoGeo || 
+                       !seoRecord.aeoGeo.scrapedUrls || 
+                       seoRecord.aeoGeo.scrapedUrls.length === 0;
     const isGbpStale = !gbpRecord || gbpRecord.updatedAt < oneDayAgo;
 
     // 2. Fetch/update SEO details if stale
@@ -85,12 +103,17 @@ router.get("/seo-data", async (req, res) => {
       console.log(`SEO metrics stale/missing for ${domain}. crawling...`);
       const crawlResults = await seoScraper.scrapeDomain(domain);
       const seededMetrics = getSeededSEOMetrics(domain, seed);
+      const aeoGeoMetrics = {
+        ...aeoGeoService.analyzeDomain(domain, crawlResults.html, crawlResults.combinedHtml),
+        scrapedUrls: crawlResults.scrapedUrls || []
+      };
 
       const recordData = {
         domain,
         authorityScore: crawlResults.authorityScore,
         technicalAudit: crawlResults.technicalAudit,
         ...seededMetrics,
+        aeoGeo: aeoGeoMetrics,
         updatedAt: new Date(),
       };
 
@@ -167,6 +190,7 @@ router.get("/seo-data", async (req, res) => {
         topKeywords: seoRecord.topKeywords,
         technicalAudit: seoRecord.technicalAudit,
       },
+      aeoGeo: seoRecord.aeoGeo || aeoGeoService.analyzeDomain(domain, null),
       gbp: {
         businessName: gbpRecord.businessName,
         rating: gbpRecord.rating,
@@ -194,7 +218,19 @@ router.post("/seo-data/gbp/reply", async (req, res) => {
       return res.status(400).json({ error: "Missing required parameters (domain, author, replyText)" });
     }
 
-    const cleanDomain = domain.trim().toLowerCase();
+    let cleanDomain = domain.trim().toLowerCase();
+    if (cleanDomain.includes("://")) {
+      try {
+        cleanDomain = new URL(cleanDomain).hostname;
+      } catch (e) {
+        cleanDomain = cleanDomain.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0];
+      }
+    } else {
+      cleanDomain = cleanDomain.split("/")[0];
+    }
+    if (cleanDomain.startsWith("www.")) {
+      cleanDomain = cleanDomain.substring(4);
+    }
 
     if (global.useMemoryDb) {
       const gbpRecord = global.memoryDb.gbpRecords.get(cleanDomain);
@@ -236,6 +272,201 @@ router.post("/seo-data/gbp/reply", async (req, res) => {
   } catch (err) {
     console.error("POST /api/seo-data/gbp/reply error:", err);
     return res.status(500).json({ error: "Failed to submit customer review response" });
+  }
+});
+
+// POST /api/seo-data/schema
+router.post("/seo-data/schema", async (req, res) => {
+  const { url } = req.body;
+  if (!url) {
+    return res.status(400).json({ error: "URL is required" });
+  }
+
+  try {
+    const { OpenAI } = require("openai");
+    let siteName = "this site";
+    try {
+      siteName = new URL(url.includes("://") ? url : `https://${url}`).hostname.replace("www.", "");
+    } catch (e) {}
+
+    if (!process.env.OPENAI_API_KEY) {
+      return res.json({
+        schema: {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": `What is the primary service offered by ${siteName}?`,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "We provide search optimization, digital visibility analysis, and structural audits for modern search integrations."
+              }
+            }
+          ]
+        }
+      });
+    }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
+    // Quick fetch to get title/description
+    let pageTitle = "Unknown Title";
+    let pageDescription = "Unknown Description";
+    try {
+      const axios = require("axios");
+      const cheerio = require("cheerio");
+      const response = await axios.get(url, { timeout: 3000 });
+      const html = response.data;
+      const $ = cheerio.load(html);
+      pageTitle = $("title").text() || pageTitle;
+      pageDescription = $('meta[name="description"]').attr("content") || pageDescription;
+    } catch (e) {
+      console.warn("Could not fetch URL for schema generation, using fallback data.");
+    }
+
+    const prompt = `
+Generate a valid JSON-LD Structured Data schema (e.g. Article, FAQPage, or Organization) for the following webpage:
+URL: ${url}
+Title: ${pageTitle}
+Description: ${pageDescription}
+
+Return ONLY the raw JSON object for the schema. Do not include markdown formatting or <script> tags.
+`;
+
+    const aiRes = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      response_format: { type: "json_object" }
+    });
+
+    const schema = JSON.parse(aiRes.choices[0].message.content);
+    res.json({ schema });
+  } catch (error) {
+    console.error("Schema Generation Error:", error);
+    res.status(500).json({ error: "Failed to generate schema" });
+  }
+});
+
+// POST /api/seo-data/geo-fixes
+router.post("/seo-data/geo-fixes", async (req, res) => {
+  const { url, fixType } = req.body;
+  if (!url || !fixType) return res.status(400).json({ error: "URL and fixType are required" });
+
+  try {
+    const { OpenAI } = require("openai");
+    if (!process.env.OPENAI_API_KEY) {
+      return res.json({ suggestion: `<!-- Mock AI copywriting fix for ${fixType} -->\n<p>Add some concrete statistics or trust badges here to optimize for search visibility!</p>` });
+    }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
+    let pageText = "Content unavailable";
+    try {
+      const axios = require("axios");
+      const cheerio = require("cheerio");
+      const response = await axios.get(url, { timeout: 3000 });
+      const html = response.data;
+      const $ = cheerio.load(html);
+      $("script, style, noscript, iframe, svg").remove();
+      pageText = $("body").text().substring(0, 5000); // 5000 chars is plenty of context for a fix
+    } catch (e) {
+      console.warn("Could not fetch URL for geo fixes generation.");
+    }
+
+    const prompt = `
+You are a Generative Engine Optimization (GEO) expert. We are trying to fix the following issue on this page: "${fixType}".
+URL: ${url}
+Context Text: ${pageText}
+
+Provide a short, actionable copywriting snippet (using HTML tags if necessary) that the user can inject into their page to solve this GEO issue. Return ONLY a JSON object with this structure: { "suggestion": "<your snippet>" }.
+`;
+
+    const aiRes = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      response_format: { type: "json_object" }
+    });
+
+    const parsed = JSON.parse(aiRes.choices[0].message.content);
+    res.json({ suggestion: parsed.suggestion });
+  } catch (error) {
+    console.error("GEO Fixes Generation Error:", error);
+    res.status(500).json({ error: "Failed to generate GEO fixes" });
+  }
+});
+
+// POST /api/seo-data/aeo-fixes
+router.post("/seo-data/aeo-fixes", async (req, res) => {
+  const { url, fixType } = req.body;
+  if (!url || !fixType) return res.status(400).json({ error: "URL and fixType are required" });
+
+  try {
+    let siteName = "this site";
+    try {
+      siteName = new URL(url.includes("://") ? url : `https://${url}`).hostname.replace("www.", "");
+    } catch (e) {}
+
+    const { OpenAI } = require("openai");
+    if (!process.env.OPENAI_API_KEY) {
+      let mockSuggestion = "";
+      if (fixType === "title") {
+        mockSuggestion = `<!-- Suggestion for optimizing title -->\n<title>Expert Digital Services & SEO Diagnostics | ${siteName}</title>`;
+      } else if (fixType === "h1") {
+        mockSuggestion = `<!-- Suggestion for single H1 tag -->\n<h1>Empower Your Digital Growth with Advanced Search Intelligence</h1>`;
+      } else {
+        mockSuggestion = `<!-- Recommended Structured Layout (List/Table) -->\n<ul>\n  <li><strong>Core Service:</strong> Real-time SEO auditing & diagnostics</li>\n  <li><strong>Features:</strong> Answer Engine Optimization integrations & maps visibility</li>\n  <li><strong>Performance:</strong> Accelerated search tracking & backlinks optimization</li>\n</ul>`;
+      }
+      return res.json({ suggestion: mockSuggestion });
+    }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
+    let pageText = "Content unavailable";
+    try {
+      const axios = require("axios");
+      const cheerio = require("cheerio");
+      const response = await axios.get(url, { timeout: 3000 });
+      const html = response.data;
+      const $ = cheerio.load(html);
+      $("script, style, noscript, iframe, svg").remove();
+      pageText = $("body").text().substring(0, 5000);
+    } catch (e) {
+      console.warn("Could not fetch URL for aeo fixes generation.");
+    }
+
+    let fixDescription = "";
+    if (fixType === "title") {
+      fixDescription = "Generate an optimized, concise <title> tag (under 60 characters) suitable for Answer Engines and users.";
+    } else if (fixType === "h1") {
+      fixDescription = "Generate a single high-impact <h1> tag that describes the page value proposition clearly.";
+    } else {
+      fixDescription = "Generate a clean HTML structured list (<ul>/<li>) or HTML comparison table (<table>) comparing key services or features of this site to improve readability for LLM scrapers.";
+    }
+
+    const prompt = `
+You are an Answer Engine Optimization (AEO) expert. We are trying to optimize the following component: "${fixType}".
+URL: ${url}
+Context Text: ${pageText}
+Task: ${fixDescription}
+
+Provide the code snippet (using proper HTML tags) that the user can inject into their page. Return ONLY a JSON object with this structure: { "suggestion": "<your code snippet>" }. Do not include extra markdown around the JSON object.
+`;
+
+    const aiRes = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      response_format: { type: "json_object" }
+    });
+
+    const parsed = JSON.parse(aiRes.choices[0].message.content);
+    res.json({ suggestion: parsed.suggestion });
+  } catch (error) {
+    console.error("AEO Fixes Generation Error:", error);
+    res.status(500).json({ error: "Failed to generate AEO fixes" });
   }
 });
 

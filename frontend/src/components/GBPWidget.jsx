@@ -76,7 +76,7 @@ export default function GBPWidget({ gbpData }) {
           {/* Header */}
           <div className="flex justify-between items-start border-b border-slate-100 pb-4">
             <div className="flex gap-3">
-              <div className="p-3 bg-blue-50 text-semrush-blue rounded-xl h-12 w-12 flex items-center justify-center shrink-0">
+              <div className="p-3 bg-blue-50 text-rankgenie-blue rounded-xl h-12 w-12 flex items-center justify-center shrink-0">
                 <MapPin className="w-6 h-6" />
               </div>
               <div>
@@ -90,7 +90,7 @@ export default function GBPWidget({ gbpData }) {
               href="https://business.google.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-semrush-blue hover:text-blue-700 text-xs font-bold flex items-center gap-1 bg-blue-50/50 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
+              className="text-rankgenie-blue hover:text-blue-700 text-xs font-bold flex items-center gap-1 bg-blue-50/50 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
             >
               Manage
               <ExternalLink className="w-3 h-3" />
@@ -115,8 +115,8 @@ export default function GBPWidget({ gbpData }) {
               </div>
               {/* Comparative Progress Bar */}
               <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden flex">
-                <div className="bg-semrush-blue h-full" style={{ width: `${mapPercent}%` }}></div>
-                <div className="bg-semrush-orange h-full" style={{ width: `${searchPercent}%` }}></div>
+                <div className="bg-rankgenie-blue h-full" style={{ width: `${mapPercent}%` }}></div>
+                <div className="bg-rankgenie-orange h-full" style={{ width: `${searchPercent}%` }}></div>
               </div>
               <div className="flex justify-between text-xs font-semibold text-slate-600 pt-0.5">
                 <span>Google Search Views</span>
@@ -153,7 +153,7 @@ export default function GBPWidget({ gbpData }) {
               <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center hover:border-slate-200 transition-colors">
                 <div className="text-xs font-bold text-slate-400">Website Clicks</div>
                 <div className="text-xl font-bold text-slate-800 mt-1 flex items-center justify-center gap-1.5">
-                  <ArrowUpRight className="w-4 h-4 text-semrush-orange" />
+                  <ArrowUpRight className="w-4 h-4 text-rankgenie-orange" />
                   {gbpData.interactions.websiteClicks}
                 </div>
               </div>
@@ -203,7 +203,7 @@ export default function GBPWidget({ gbpData }) {
                           value={replyInput}
                           onChange={(e) => setReplyInput(e.target.value)}
                           placeholder="Type customer reply..."
-                          className="w-full text-xs p-1.5 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500/20 focus:border-semrush-orange"
+                          className="w-full text-xs p-1.5 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500/20 focus:border-rankgenie-orange"
                         />
                         <div className="flex gap-2 justify-end">
                           <button
@@ -214,7 +214,7 @@ export default function GBPWidget({ gbpData }) {
                           </button>
                           <button
                             onClick={() => handleAddReply(idx)}
-                            className="px-2.5 py-1 text-[10px] bg-semrush-orange hover:bg-semrush-orange/95 text-white rounded font-bold shadow-sm transition-colors"
+                            className="px-2.5 py-1 text-[10px] bg-rankgenie-orange hover:bg-rankgenie-orange/95 text-white rounded font-bold shadow-sm transition-colors"
                           >
                             Send Reply
                           </button>
@@ -226,7 +226,7 @@ export default function GBPWidget({ gbpData }) {
                           setActiveReplyIdx(idx);
                           setReplyInput("");
                         }}
-                        className="text-semrush-orange hover:text-semrush-orange/90 text-[10px] font-bold tracking-wide uppercase hover:underline"
+                        className="text-rankgenie-orange hover:text-rankgenie-orange/90 text-[10px] font-bold tracking-wide uppercase hover:underline"
                       >
                         Reply to Review
                       </button>
@@ -239,8 +239,8 @@ export default function GBPWidget({ gbpData }) {
         </div>
         <div className="text-[10px] text-slate-400 font-semibold mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
           <span>Active Listings: 1/1</span>
-          <span className="text-semrush-success font-bold flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-semrush-success rounded-full animate-pulse"></span>
+          <span className="text-rankgenie-success font-bold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-rankgenie-success rounded-full animate-pulse"></span>
             Sync Active
           </span>
         </div>

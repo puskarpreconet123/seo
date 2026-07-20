@@ -48,6 +48,54 @@ const SEORecordSchema = new mongoose.Schema(
       notices: { type: Number, default: 0 },
       topIssues: [AuditIssueSchema],
     },
+    aeoGeo: {
+      aeoScore: { type: Number, default: 0 },
+      geoScore: { type: Number, default: 0 },
+      schemaAnalysis: {
+        faqSchema: { type: Boolean, default: false },
+        howToSchema: { type: Boolean, default: false },
+        qaSchema: { type: Boolean, default: false },
+        organizationSchema: { type: Boolean, default: false },
+        articleSchema: { type: Boolean, default: false },
+        schemaScore: { type: Number, default: 0 },
+        schemaDetails: [String],
+      },
+      readabilityAnalysis: {
+        wordCount: { type: Number, default: 0 },
+        averageParagraphLength: { type: Number, default: 0 },
+        fleschKincaidReadingEase: { type: Number, default: 0 },
+        bulletPointDensity: { type: Number, default: 0 },
+        tablePresence: { type: Boolean, default: false },
+      },
+      textDensity: {
+        factualDensityScore: { type: Number, default: 0 },
+        informationGainScore: { type: Number, default: 0 },
+        eeatScore: { type: Number, default: 0 },
+      },
+      conversationalKeywords: [
+        {
+          keyword: String,
+          volume: Number,
+          intent: String,
+          aiSearchCitationProbability: Number,
+        }
+      ],
+      aiSearchSimulator: [
+        {
+          query: String,
+          aiResponse: String,
+          isDomainCited: { type: Boolean, default: false },
+          citedUrl: String,
+          citations: [String],
+        }
+      ],
+      suggestions: {
+        stats: { type: String, default: "" },
+        authority: { type: String, default: "" },
+        fluency: { type: String, default: "" },
+      },
+      scrapedUrls: [String]
+    }
   },
   { timestamps: true }
 );

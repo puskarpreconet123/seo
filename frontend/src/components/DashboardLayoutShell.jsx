@@ -24,7 +24,7 @@ export default function DashboardLayoutShell({ children }) {
     if (isLoading) {
       return (
         <div className="flex flex-col flex-1 items-center justify-center min-h-[400px]">
-          <RefreshCw className="w-8 h-8 text-semrush-orange animate-spin mb-3" />
+          <RefreshCw className="w-8 h-8 text-rankgenie-orange animate-spin mb-3" />
           <span className="text-sm font-semibold text-slate-500">
             Analyzing {currentDomain}... Fetching SEO & Local search metrics
           </span>
@@ -35,12 +35,12 @@ export default function DashboardLayoutShell({ children }) {
     if (error) {
       return (
         <div className="bg-red-50 border border-red-200 text-red-700 p-5 rounded-xl text-center max-w-xl mx-auto my-12">
-          <ShieldAlert className="w-8 h-8 mx-auto mb-2 text-semrush-danger" />
+          <ShieldAlert className="w-8 h-8 mx-auto mb-2 text-rankgenie-danger" />
           <h4 className="font-bold text-sm">Failed to Load Dashboard Data</h4>
           <p className="text-xs mt-1 text-red-600">{error}</p>
           <button
             onClick={handleRefresh}
-            className="mt-4 px-4 py-2 bg-semrush-orange text-white text-xs font-bold rounded-lg shadow hover:bg-semrush-orange/90 transition-colors"
+            className="mt-4 px-4 py-2 bg-rankgenie-orange text-white text-xs font-bold rounded-lg shadow hover:bg-rankgenie-orange/90 transition-colors"
           >
             Retry Analysis
           </button>
@@ -54,7 +54,7 @@ export default function DashboardLayoutShell({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-semrush-lightBg text-slate-800 font-sans w-full flex flex-col">
+    <div className="min-h-screen bg-rankgenie-lightBg text-slate-800 font-sans w-full flex flex-col">
       {/* Top bar header */}
       <TopBar
         currentDomain={currentDomain}

@@ -63,11 +63,11 @@ export default function TrafficChart({ data }) {
         </div>
         <div className="flex items-center gap-4 text-xs font-semibold">
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 bg-semrush-orange rounded-full"></span>
+            <span className="w-3 h-3 bg-rankgenie-orange rounded-full"></span>
             <span className="text-slate-600">Organic</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 bg-semrush-blue rounded-full"></span>
+            <span className="w-3 h-3 bg-rankgenie-blue rounded-full"></span>
             <span className="text-slate-600">Paid Search</span>
           </div>
         </div>
@@ -163,7 +163,7 @@ export default function TrafficChart({ data }) {
                   cx={x}
                   cy={orgY}
                   r={hoveredIdx === idx ? 5 : 3.5}
-                  className="fill-white stroke-semrush-orange"
+                  className="fill-white stroke-rankgenie-orange"
                   strokeWidth="2.5"
                 />
 
@@ -172,7 +172,7 @@ export default function TrafficChart({ data }) {
                   cx={x}
                   cy={paidY}
                   r={hoveredIdx === idx ? 5 : 3.5}
-                  className="fill-white stroke-semrush-blue"
+                  className="fill-white stroke-rankgenie-blue"
                   strokeWidth="2.5"
                 />
 
@@ -217,14 +217,14 @@ export default function TrafficChart({ data }) {
             </div>
             <div className="flex justify-between items-center mt-1">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-semrush-orange"></span>
+                <span className="w-2 h-2 rounded-full bg-rankgenie-orange"></span>
                 <span>Organic:</span>
               </span>
               <span className="font-bold">{data[hoveredIdx].organic.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-semrush-blue"></span>
+                <span className="w-2 h-2 rounded-full bg-rankgenie-blue"></span>
                 <span>Paid:</span>
               </span>
               <span className="font-bold">{data[hoveredIdx].paid.toLocaleString()}</span>

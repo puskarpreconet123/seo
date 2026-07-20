@@ -11,7 +11,7 @@ export default function DynamicTab({ params }) {
 
   return (
     <div className="bg-white p-12 rounded-xl border border-slate-200 text-center max-w-xl mx-auto my-12 shadow-sm">
-      <Sparkles className="w-12 h-12 mx-auto mb-4 text-semrush-orange animate-pulse" />
+      <Sparkles className="w-12 h-12 mx-auto mb-4 text-rankgenie-orange animate-pulse" />
       <h3 className="font-bold text-lg text-slate-800">Feature Under Development</h3>
       <p className="text-sm text-slate-500 mt-2 leading-relaxed">
         We are working hard to integrate this analytics intelligence module. Soon you will be able to perform live tracking and analysis here.
@@ -25,7 +25,7 @@ export default function DynamicTab({ params }) {
         </button>
         <button
           onClick={() => router.push("/settings")}
-          className="px-4 py-2 bg-semrush-orange text-white text-xs font-bold rounded-lg shadow hover:bg-semrush-orange/95 transition-colors"
+          className="px-4 py-2 bg-rankgenie-orange text-white text-xs font-bold rounded-lg shadow hover:bg-rankgenie-orange/95 transition-colors"
         >
           Configure Keys
         </button>

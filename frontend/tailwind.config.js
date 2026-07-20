@@ -8,7 +8,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        semrush: {
+        rankgenie: {
           orange: "#ff640d",
           dark: "#1e2029",
           lightBg: "#f4f5f9",

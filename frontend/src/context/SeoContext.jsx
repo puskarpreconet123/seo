@@ -46,7 +46,11 @@ export function SeoProvider({ children }) {
   const handleSearch = (newDomain) => {
     setIsLoading(true);
     setError(null);
-    setCurrentDomain(newDomain);
+    if (newDomain === currentDomain) {
+      setTriggerRefresh((prev) => prev + 1);
+    } else {
+      setCurrentDomain(newDomain);
+    }
   };
 
   const handleRefresh = () => {

@@ -62,12 +62,12 @@ export default function OverviewCard({ title, value, change, format, sparklineDa
           {change !== undefined && (
             <div className="flex items-center gap-1 mt-1.5">
               {isPositive ? (
-                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-semrush-success bg-green-50 px-1.5 py-0.5 rounded">
+                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-rankgenie-success bg-green-50 px-1.5 py-0.5 rounded">
                   <TrendingUp className="w-3 h-3" />
                   +{change}%
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-semrush-danger bg-red-50 px-1.5 py-0.5 rounded">
+                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-rankgenie-danger bg-red-50 px-1.5 py-0.5 rounded">
                   <TrendingDown className="w-3 h-3" />
                   {change}%
                 </span>

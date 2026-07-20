@@ -206,7 +206,7 @@ export default function SeoDashboard({ seoData, currentDomain }) {
 
   const [timeframe, setTimeframe] = useState("Last 6 months");
   const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
-  const [dataSource, setDataSource] = useState("semrush");
+  const [dataSource, setDataSource] = useState("rankgenie");
   const [visibleChannels, setVisibleChannels] = useState({
     direct: true,
     referral: true,
@@ -555,9 +555,9 @@ export default function SeoDashboard({ seoData, currentDomain }) {
                       <span className="text-[12px] text-slate-400 font-normal">0</span>
                     </div>
                   </div>
-                  {/* Semrush Rank */}
+                  {/* Rankgenie Rank */}
                   <div className="text-[12px] text-slate-400 mt-2 font-normal">
-                    Semrush Rank <span className="text-blue-600 hover:underline cursor-pointer">35.8M</span>
+                    Rankgenie Rank <span className="text-blue-600 hover:underline cursor-pointer">35.8M</span>
                   </div>
                 </div>
               </div>
@@ -1282,7 +1282,7 @@ export default function SeoDashboard({ seoData, currentDomain }) {
               />
             </div>
             <p className="text-[13px] text-slate-555 font-normal leading-relaxed">
-              Uncover "not provided" keywords combining GA, GSC and Semrush data.
+              Uncover "not provided" keywords combining GA, GSC and Rankgenie data.
             </p>
           </div>
           <div className="pt-4">
@@ -1315,9 +1315,9 @@ export default function SeoDashboard({ seoData, currentDomain }) {
             {/* Source Pills */}
             <div className="flex items-center gap-1 bg-slate-50 p-0.5 rounded-lg border border-slate-200">
               <button 
-                onClick={() => setDataSource("semrush")}
+                onClick={() => setDataSource("rankgenie")}
                 className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-md transition-colors ${
-                  dataSource === "semrush" 
+                  dataSource === "rankgenie" 
                     ? "bg-slate-800 text-white shadow-sm" 
                     : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
                 }`}

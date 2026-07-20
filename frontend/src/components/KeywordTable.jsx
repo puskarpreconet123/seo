@@ -88,7 +88,7 @@ export default function KeywordTable({ keywords = [] }) {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className="block w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-orange-500/20 focus:border-semrush-orange transition-all"
+            className="block w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-orange-500/20 focus:border-rankgenie-orange transition-all"
           />
         </div>
       </div>
@@ -196,7 +196,7 @@ export default function KeywordTable({ keywords = [] }) {
                 onClick={() => setCurrentPage(idx + 1)}
                 className={`w-8 h-8 rounded text-xs font-bold transition-colors ${
                   currentPage === idx + 1
-                    ? "bg-semrush-orange text-white"
+                    ? "bg-rankgenie-orange text-white"
                     : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
                 }`}
               >

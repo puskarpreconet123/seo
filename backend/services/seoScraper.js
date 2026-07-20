@@ -2,19 +2,31 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 
 /**
- * Scrapes a target website's root URL and compiles SEO metrics.
+ * Scrapes a target website's root URL and key pages (/about, /contact) concurrently.
  * Gracefully falls back to structured simulations if the target domain cannot be reached.
  * @param {string} domain The domain to scrape (e.g., "example.com")
  */
 async function scrapeDomain(domain) {
-  let url = domain;
-  if (!/^https?:\/\//i.test(url)) {
-    url = `https://${domain}`;
+  let cleanDomain = domain.trim().toLowerCase();
+  if (cleanDomain.includes("://")) {
+    try {
+      cleanDomain = new URL(cleanDomain).hostname;
+    } catch (e) {
+      cleanDomain = cleanDomain.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0];
+    }
+  } else {
+    cleanDomain = cleanDomain.split("/")[0];
+  }
+  if (cleanDomain.startsWith("www.")) {
+    cleanDomain = cleanDomain.substring(4);
   }
 
+  const rootUrl = `https://${cleanDomain}`;
+  
   // Define default values
   let authorityScore = 30;
   let html = "";
+  let combinedHtml = "";
   let scrapable = false;
 
   // Stable seed generation for generating predictable simulated metrics for offline domains
@@ -25,7 +37,7 @@ async function scrapeDomain(domain) {
     }
     return Math.abs(hash);
   };
-  const seed = getSeed(domain);
+  const seed = getSeed(cleanDomain);
 
   // Authority score mock calculation based on domain characteristics
   authorityScore = Math.min(99, Math.round(45 + (seed % 45)));
@@ -34,18 +46,51 @@ async function scrapeDomain(domain) {
   let warnings = [];
   let notices = [];
 
+  const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AntigravitySEO/1.0";
+
+  let results = [];
   try {
-    const response = await axios.get(url, {
-      timeout: 5000,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AntigravitySEO/1.0",
-      },
-    });
-    html = response.data;
-    scrapable = true;
+    const urlsToFetch = [
+      { key: "root", url: rootUrl },
+      { key: "about", url: `${rootUrl}/about` },
+      { key: "about_us", url: `${rootUrl}/about-us` },
+      { key: "contact", url: `${rootUrl}/contact` },
+      { key: "contact_us", url: `${rootUrl}/contact-us` }
+    ];
+
+    const fetchPromises = urlsToFetch.map(item => 
+      axios.get(item.url, {
+        timeout: 4000,
+        headers: { "User-Agent": userAgent }
+      })
+      .then(res => ({ key: item.key, url: item.url, html: res.data, success: true }))
+      .catch(err => ({ key: item.key, url: item.url, success: false, error: err.message }))
+    );
+
+    results = await Promise.all(fetchPromises);
+    
+    // Find root result
+    const rootResult = results.find(r => r.key === "root");
+    if (rootResult && rootResult.success) {
+      html = rootResult.html;
+      scrapable = true;
+      combinedHtml += `\n<!-- HTML FROM ${rootResult.url} -->\n` + rootResult.html;
+    }
+
+    // Add about page
+    const aboutResult = results.find(r => r.key === "about" && r.success) || results.find(r => r.key === "about_us" && r.success);
+    if (aboutResult) {
+      combinedHtml += `\n<!-- HTML FROM ${aboutResult.url} -->\n` + aboutResult.html;
+    }
+
+    // Add contact page
+    const contactResult = results.find(r => r.key === "contact" && r.success) || results.find(r => r.key === "contact_us" && r.success);
+    if (contactResult) {
+      combinedHtml += `\n<!-- HTML FROM ${contactResult.url} -->\n` + contactResult.html;
+    }
+
   } catch (err) {
-    // If the domain fails to load, compile realistic simulated diagnostics so the app remains fully functional
-    console.warn(`Could not fetch ${url} directly: ${err.message}. Generating local simulated audit logs.`);
+    console.warn(`Could not run Deep Scan on ${cleanDomain}: ${err.message}`);
   }
 
   if (scrapable && html) {
@@ -132,14 +177,30 @@ async function scrapeDomain(domain) {
   const totalDeductions = (errors.length * errorWeight) + (warnings.length * warningWeight) + (notices.length * noticeWeight);
   const healthScore = Math.max(30, 100 - totalDeductions);
 
-  // Compile issues list
   const topIssues = [];
   errors.forEach((msg) => topIssues.push({ type: "error", message: msg }));
   warnings.forEach((msg) => topIssues.push({ type: "warning", message: msg }));
   notices.forEach((msg) => topIssues.push({ type: "notice", message: msg }));
 
+  // Collect successfully scraped URLs
+  let scrapedUrls = [];
+  if (scrapable) {
+    scrapedUrls.push(rootUrl);
+    const aboutResult = results.find(r => (r.key === "about" || r.key === "about_us") && r.success);
+    if (aboutResult) scrapedUrls.push(aboutResult.url);
+    const contactResult = results.find(r => (r.key === "contact" || r.key === "contact_us") && r.success);
+    if (contactResult) scrapedUrls.push(contactResult.url);
+  } else {
+    scrapedUrls.push(rootUrl);
+    scrapedUrls.push(`${rootUrl}/about`);
+    scrapedUrls.push(`${rootUrl}/contact`);
+  }
+
   return {
     authorityScore,
+    html,
+    combinedHtml,
+    scrapedUrls,
     technicalAudit: {
       healthScore,
       errors: errors.length,

@@ -15,15 +15,26 @@ import {
   TrendingUp,
   Home,
   Sparkles,
-  Image
+  Image,
+  Link,
+  Brain,
+  Code,
+  FileText,
+  Bot
 } from "lucide-react";
 
 export default function Sidebar({ isScrolled }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const getTabFromPathname = (path) => {
-    if (path === "/") return "home-dashboard";
+    if (!path || path === "/") return "home-dashboard";
     return path.substring(1) || "home-dashboard";
   };
   const activeTab = getTabFromPathname(pathname);
@@ -60,10 +71,16 @@ export default function Sidebar({ isScrolled }) {
           ]
         },
         {
+          title: "Link Optimization",
+          items: [
+            { id: "link-analysis", name: "Link Analysis", icon: Link },
+            { id: "link-structure", name: "Link Structure", icon: Globe },
+          ]
+        },
+        {
           title: "Competitive Analysis",
           items: [
-            { id: "organic", name: "Organic Research", icon: Search },
-            { id: "backlinks", name: "Backlink Analytics", icon: Globe },
+            { id: "organic", name: "Organic Research", icon: Search }
           ]
         },
         {
@@ -101,6 +118,27 @@ export default function Sidebar({ isScrolled }) {
           items: [
             { id: "writing-assistant", name: "SEO Writing Assistant", icon: Sparkles },
             { id: "topic-research", name: "Topic Research", icon: Search },
+          ]
+        }
+      ]
+    },
+    {
+      id: "ai-visibility",
+      name: "AI Visibility",
+      icon: Brain,
+      defaultTab: "technical-aeo",
+      categories: [
+        {
+          title: "Optimization",
+          items: [
+            { id: "technical-aeo", name: "Technical AEO", icon: Code },
+            { id: "generative-geo", name: "Generative GEO", icon: FileText },
+          ]
+        },
+        {
+          title: "Testing",
+          items: [
+            { id: "ai-simulator", name: "AI Simulator", icon: Bot },
           ]
         }
       ]
@@ -188,6 +226,19 @@ export default function Sidebar({ isScrolled }) {
 
   const selectedToolkit = toolkits.find(t => t.id === selectedToolkitId);
 
+  if (!mounted) {
+    return (
+      <div
+        className="sticky top-0 shrink-0 z-20 select-none flex transition-all duration-300"
+        style={{
+          height: isScrolled ? "100vh" : "calc(100vh - 64px)",
+        }}
+      >
+        <aside className="w-[60px] bg-slate-50 border-r border-slate-200 shrink-0 h-full" />
+      </div>
+    );
+  }
+
   return (
     <div
       className="sticky top-0 shrink-0 z-20 select-none flex transition-all duration-300"
@@ -209,7 +260,7 @@ export default function Sidebar({ isScrolled }) {
                     onClick={() => handleToolkitClick(toolkit)}
                     className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
                       isActive
-                        ? "bg-orange-50 text-semrush-orange border border-orange-100 shadow-sm"
+                        ? "bg-orange-50 text-rankgenie-orange border border-orange-100 shadow-sm"
                         : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                     }`}
                   >
@@ -248,7 +299,7 @@ export default function Sidebar({ isScrolled }) {
                                       }}
                                       className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-sm transition-colors font-medium ${
                                         isItemActive
-                                          ? "bg-orange-50 text-semrush-orange font-semibold"
+                                          ? "bg-orange-50 text-rankgenie-orange font-semibold"
                                           : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                                       }`}
                                     >
@@ -321,7 +372,7 @@ export default function Sidebar({ isScrolled }) {
                                 }}
                                 className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-sm transition-colors font-medium ${
                                   isItemActive
-                                    ? "bg-orange-50 text-semrush-orange font-semibold"
+                                    ? "bg-orange-50 text-rankgenie-orange font-semibold"
                                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                                 }`}
                               >
@@ -389,12 +440,12 @@ export default function Sidebar({ isScrolled }) {
                             <div className="flex items-center gap-2.5">
                               <Icon
                                 className={`w-3.5 h-3.5 ${
-                                  isActive ? "text-semrush-orange" : "text-slate-400"
+                                  isActive ? "text-rankgenie-orange" : "text-slate-400"
                                 }`}
                               />
                               <span>{item.name}</span>
                             </div>
-                            {isActive && <div className="w-1 h-3.5 rounded-full bg-semrush-orange" />}
+                            {isActive && <div className="w-1 h-3.5 rounded-full bg-rankgenie-orange" />}
                           </button>
                         </li>
                       );
