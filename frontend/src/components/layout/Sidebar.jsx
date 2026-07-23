@@ -126,19 +126,14 @@ export default function Sidebar({ isScrolled }) {
       id: "ai-visibility",
       name: "AI Visibility",
       icon: Brain,
-      defaultTab: "technical-aeo",
+      defaultTab: "ai-simulator",
       categories: [
         {
-          title: "Optimization",
+          title: "Simulation & Tracking",
           items: [
-            { id: "technical-aeo", name: "Technical AEO", icon: Code },
+            { id: "ai-simulator", name: "LLM Preference", icon: Bot },
             { id: "generative-geo", name: "Generative GEO", icon: FileText },
-          ]
-        },
-        {
-          title: "Testing",
-          items: [
-            { id: "ai-simulator", name: "AI Simulator", icon: Bot },
+            { id: "technical-aeo", name: "Technical AEO", icon: Code },
           ]
         }
       ]

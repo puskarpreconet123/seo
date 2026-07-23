@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useSeo } from "@/context/SeoContext";
-import KeywordTable from "@/components/KeywordTable";
+import KeywordTable from "@/components/organic/KeywordTable";
 import { TrendingUp } from "lucide-react";
 
 export default function OrganicPage() {

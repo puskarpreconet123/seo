@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import ImageSeoAnalysis from "@/components/ImageSeoAnalysis";
+import ImageSeoAnalysis from "@/components/image-seo/ImageSeoAnalysis";
 import { ImageIcon } from "lucide-react";
 
 export default function ImageSeoPage() {

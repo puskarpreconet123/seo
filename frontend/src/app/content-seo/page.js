@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import ContentAnalyzer from "@/components/ContentAnalyzer";
-import AdvancedOnPageAnalysis from "@/components/AdvancedOnPageAnalysis";
+import ContentAnalyzer from "@/components/content-seo/ContentAnalyzer";
+import AdvancedOnPageAnalysis from "@/components/content-seo/AdvancedOnPageAnalysis";
 import { Sparkles } from "lucide-react";
 
 export default function ContentSeoPage() {

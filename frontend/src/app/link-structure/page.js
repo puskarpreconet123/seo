@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import LinkStructure from "@/components/LinkStructure";
+import LinkStructure from "@/components/link-structure/LinkStructure";
 import { Globe } from "lucide-react";
 
 export default function LinkStructurePage() {

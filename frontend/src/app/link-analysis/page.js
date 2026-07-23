@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import LinkAnalysis from "@/components/LinkAnalysis";
+import LinkAnalysis from "@/components/link-analysis/LinkAnalysis";
 import { Link2 } from "lucide-react";
 
 export default function LinkAnalysisPage() {

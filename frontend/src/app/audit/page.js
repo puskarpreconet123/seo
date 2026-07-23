@@ -2,15 +2,15 @@
 
 import React, { useState } from "react";
 import { useSeo } from "@/context/SeoContext";
-import SiteAuditWidget from "@/components/SiteAuditWidget";
-import SeoStatsOverview from "@/components/SeoStatsOverview";
-import SeoScoreCharts from "@/components/SeoScoreCharts";
-import SeoPriorityActionPlan from "@/components/SeoPriorityActionPlan";
-import ConsolidatedSeoChecklist from "@/components/ConsolidatedSeoChecklist";
-import PagePerformanceAnalysis from "@/components/PagePerformanceAnalysis";
-import PerformanceCharts from "@/components/PerformanceCharts";
-import RobotsSitemapAnalyzer from "@/components/RobotsSitemapAnalyzer";
-import SchemaStructuredDataAnalyzer from "@/components/SchemaStructuredDataAnalyzer";
+import SiteAuditWidget from "@/components/audit/SiteAuditWidget";
+import SeoStatsOverview from "@/components/audit/SeoStatsOverview";
+import SeoScoreCharts from "@/components/audit/SeoScoreCharts";
+import SeoPriorityActionPlan from "@/components/audit/SeoPriorityActionPlan";
+import ConsolidatedSeoChecklist from "@/components/audit/ConsolidatedSeoChecklist";
+import PagePerformanceAnalysis from "@/components/audit/PagePerformanceAnalysis";
+import PerformanceCharts from "@/components/audit/PerformanceCharts";
+import RobotsSitemapAnalyzer from "@/components/audit/RobotsSitemapAnalyzer";
+import SchemaStructuredDataAnalyzer from "@/components/audit/SchemaStructuredDataAnalyzer";
 import { Layers, RefreshCw, Download, Share2, FileText, Monitor, CheckCircle } from "lucide-react";
 
 export default function AuditPage() {

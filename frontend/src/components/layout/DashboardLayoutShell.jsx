@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
+import Sidebar from "@/components/layout/Sidebar";
+import TopBar from "@/components/layout/TopBar";
 import { RefreshCw, ShieldAlert } from "lucide-react";
 import { useSeo } from "@/context/SeoContext";
 

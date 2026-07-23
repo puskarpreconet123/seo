@@ -2,7 +2,7 @@ import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { SeoProvider } from "@/context/SeoContext";
-import DashboardLayoutShell from "@/components/DashboardLayoutShell";
+import DashboardLayoutShell from "@/components/layout/DashboardLayoutShell";
 
 const inter = Inter({
   variable: "--font-inter",

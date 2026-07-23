@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useSeo } from "@/context/SeoContext";
-import GBPWidget from "@/components/GBPWidget";
+import GBPWidget from "@/components/gbp/GBPWidget";
 import { MapPin } from "lucide-react";
 
 export default function GBPPage() {
