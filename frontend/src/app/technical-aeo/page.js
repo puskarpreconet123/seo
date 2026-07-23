@@ -42,9 +42,10 @@ export default function TechnicalAeoPage() {
   // Generate AEO Semantic & Schema Markup Fixes
   const handleGenerateAeoFix = async (fixKey) => {
     setLoadingFix((prev) => ({ ...prev, [fixKey]: true }));
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
     try {
       if (fixKey === 'schema') {
-        const response = await fetch("http://127.0.0.1:5000/api/seo-data/schema", {
+        const response = await fetch(`${API_BASE_URL}/api/seo-data/schema`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: `https://${currentDomain}` })
@@ -59,7 +60,7 @@ export default function TechnicalAeoPage() {
         return;
       }
 
-      const response = await fetch("http://127.0.0.1:5000/api/seo-data/aeo-fixes", {
+      const response = await fetch(`${API_BASE_URL}/api/seo-data/aeo-fixes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: `https://${currentDomain}`, fixType: fixKey })

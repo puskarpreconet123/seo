@@ -16,7 +16,8 @@ export default function GBPWidget({ gbpData }) {
     if (!replyInput.trim()) return;
     const review = reviews[idx];
     try {
-      const res = await fetch("http://127.0.0.1:5000/api/seo-data/gbp/reply", {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+      const res = await fetch(`${API_BASE_URL}/api/seo-data/gbp/reply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

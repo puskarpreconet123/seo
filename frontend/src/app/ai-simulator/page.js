@@ -78,13 +78,14 @@ export default function AiSimulatorPage() {
     setAuditError(null);
     setAuditResults(null);
 
-    const domain = getCleanDomain(auditUrl);
-    const competitors = auditCompetitors.trim()
-      ? auditCompetitors.split(",").map((c) => c.trim()).filter(Boolean)
-      : [];
-
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/seo-data/ai-visibility-audit", {
+      const domain = getCleanDomain(auditUrl);
+      const competitors = auditCompetitors.trim()
+        ? auditCompetitors.split(",").map((c) => c.trim()).filter(Boolean)
+        : [];
+
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+      const response = await fetch(`${API_BASE_URL}/api/seo-data/ai-visibility-audit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

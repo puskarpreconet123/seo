@@ -16,7 +16,9 @@ export function SeoProvider({ children }) {
     setIsLoading(true);
     setError(null);
 
-    fetch(`http://127.0.0.1:5000/api/seo-data?domain=${encodeURIComponent(currentDomain)}`)
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+
+    fetch(`${API_BASE_URL}/api/seo-data?domain=${encodeURIComponent(currentDomain)}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error("Failed to fetch dashboard intelligence data");
