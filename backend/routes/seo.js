@@ -470,4 +470,217 @@ Provide the code snippet (using proper HTML tags) that the user can inject into 
   }
 });
 
+// POST /api/seo-data/brand-preference
+router.post("/seo-data/brand-preference", async (req, res) => {
+  const { domain, brandName, competitors = [], prompt } = req.body;
+  if (!domain || !brandName || !prompt) {
+    return res.status(400).json({ error: "domain, brandName, and prompt are required" });
+  }
+
+  // Sanitizing inputs
+  const cleanDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0].toLowerCase();
+  const cleanCompetitors = Array.isArray(competitors)
+    ? competitors.map(c => c.trim()).filter(Boolean)
+    : [];
+
+  try {
+    const { OpenAI } = require("openai");
+    const hasKey = !!process.env.OPENAI_API_KEY;
+
+    if (!hasKey) {
+      return res.status(500).json({ error: "An error occurred on either our side or your network (Missing OpenAI API Key Configuration)." });
+    }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
+    const apiPrompt = `
+You are a Generative Engine Optimization (GEO) and Answer Engine Optimization (AEO) diagnostic tool.
+We are analyzing how different LLMs rank, recommend, and cite a specific target brand versus its competitors for a given search query/prompt.
+
+Target Brand: "${brandName}" (Domain: "${cleanDomain}")
+Competitor Brands: ${cleanCompetitors.map(c => `"${c}"`).join(", ") || "None specified (Please dynamically identify the top 5-6 direct competitor companies/agencies of the same type in this niche to compare against)"}
+User Search Query/Prompt: "${prompt}"
+
+Your job is to simulate responses from 5 different LLM architectures and analyze how the target brand performs in each. The 5 models are:
+1. "ChatGPT (GPT-4o)" (Persona: Highly detailed, structured, conversational list or comparison with clear pros and cons).
+2. "Google Gemini" (Persona: Direct answer format, bullet points, emphasizing search-engine layout and recommendations, highly structured tables).
+3. "Claude 3.5 Sonnet" (Persona: Academic, objective, thorough, analytical, deeply explaining the nuances of each option).
+4. "Perplexity AI" (Persona: Synthesized web search result with numbered inline citations like [1], [2], referencing sources directly, listing brand links).
+5. "Meta LLaMA 3" (Persona: Casual, helpful, direct, summarizes recommendations quickly).
+
+For each model, you must produce:
+1. The simulated response (markdown formatted, around 120-200 words).
+2. An array of brand mentions (for both the target brand and any competitor brands mentioned). If no competitor brands were specified, you must dynamically identify the top 4-5 direct competitor brands of the same type (e.g. custom web dev/marketing agencies for Preconet, NOT DIY platforms or freelance marketplaces) for this brand in its industry and perform the comparison against them. For each brand, specify:
+   - Name
+   - Sentiment (positive, neutral, or negative)
+   - Rank (1, 2, 3, etc. or null if not recommended in a list)
+   - Score (0 to 100 based on prominence and recommendation strength)
+   - Reason (short description of why the model ranked it this way or commented on it)
+3. The visibilityScore for the target brand in this model (0 to 100).
+4. Actionable recommendations (specific advice on what the target brand can optimize on its website to be ranked #1 or cited first by this model, e.g. "Add a comparison table matching the query", "Increase EEAT credentials", etc.).
+5. Simulated citation URLs (at least 1-2 URLs matching the brand's domain if cited, plus competitors' or third-party links).
+
+Also, provide an overall "summary" object containing:
+- "winner": The brand that is overall most preferred across the models for this query.
+- "marketInsights": A short summary of why the competitors succeeded or how the target brand is positioned.
+
+Format the output strictly as a JSON object with this shape:
+{
+  "results": [
+    {
+      "model": "ChatGPT (GPT-4o)",
+      "response": "...",
+      "visibilityScore": 85,
+      "brandMentions": [
+        { "name": "BrandName", "sentiment": "positive"|"neutral"|"negative", "rank": 1, "score": 85, "reason": "..." }
+      ],
+      "citations": ["url1", "url2"],
+      "recommendations": "..."
+    }
+  ],
+  "summary": {
+    "winner": "...",
+    "marketInsights": "..."
+  }
+}
+
+Do not return any other text, markdown blocks, or code blocks outside the JSON. Return only the JSON object.
+`;
+
+    const aiRes = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: apiPrompt }],
+      temperature: 0.3,
+      response_format: { type: "json_object" }
+    });
+
+    const parsed = JSON.parse(aiRes.choices[0].message.content);
+    return res.json(parsed);
+  } catch (error) {
+    console.error("Brand Preference API Error:", error);
+    return res.status(500).json({ error: "An error occurred on either our side or your network: " + error.message });
+  }
+});
+
+// POST /api/seo-data/ai-visibility-audit
+router.post("/seo-data/ai-visibility-audit", async (req, res) => {
+  const { domain, brandName, competitors = [], niche } = req.body;
+  if (!domain || !brandName || !niche) {
+    return res.status(400).json({ error: "domain, brandName, and niche are required" });
+  }
+
+  // Sanitizing inputs
+  const cleanDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0].toLowerCase();
+  const cleanCompetitors = Array.isArray(competitors)
+    ? competitors.map(c => c.trim()).filter(Boolean)
+    : [];
+
+  try {
+    const { OpenAI } = require("openai");
+    const hasKey = !!process.env.OPENAI_API_KEY;
+
+    if (!hasKey) {
+      return res.status(500).json({ error: "An error occurred on either our side or your network (Missing OpenAI API Key Configuration)." });
+    }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
+    const apiPrompt = `
+You are a Generative Engine Optimization (GEO) audit engine.
+Your task is to perform an AI Visibility Audit for a brand versus its competitors across a specific business niche.
+
+Target Brand Name: "${brandName}" (Domain: "${cleanDomain}")
+Competitor Brand Names: ${cleanCompetitors.map(c => `"${c}"`).join(", ") || "None specified (Please dynamically identify the top 4-5 direct competitor companies/agencies of the same type in this niche to compare against)"}
+Business Niche/Keywords: "${niche}"
+
+First, generate 5 typical conversational prompts that customers in this niche would ask search engines / LLMs to find service companies or agencies (avoid generic DIY platforms like Wix/Shopify, or freelance marketplaces like Toptal/Upwork). If the niche relates to web development/marketing agencies (like the target brand), ensure the prompts focus on finding custom web development or marketing companies/agencies (e.g. "What are the best custom web development companies...", "Compare digital marketing agencies..."). Assign a simulated monthly search volume (between 500 and 5000) to each prompt.
+
+Then, simulate the search results across 4 main LLMs:
+1. "ChatGPT (GPT-4o)"
+2. "Google Gemini"
+3. "Claude 3.5 Sonnet"
+4. "Perplexity AI"
+
+For each of the 5 prompts and each of the 4 LLMs, determine if the target brand and competitor brands are mentioned. For each brand mention, evaluate:
+- Is it "cited" (mentioned with a website link/URL), "mentioned" (text mention without a link), or "none" (not recommended/mentioned)?
+- What is the recommended rank (1, 2, 3, or null if not ranked)?
+- What is the sentiment (positive, neutral, or negative)?
+
+Using these details, calculate:
+1. A prompt-level visibility score for each brand:
+   Score = Base Mention Score * Rank Factor * Sentiment Factor
+   - Base Mention Score: cited = 100, mentioned = 40, none = 0
+   - Rank Factor: rank 1 = 1.0, rank 2 = 0.8, rank 3 = 0.6, no rank/general mention = 0.4
+   - Sentiment Factor: positive = 1.0, neutral = 0.5, negative = 0.0
+
+2. The weighted overall visibility score (0-100) for each brand across all 5 prompts, weighted by the prompt search volumes.
+   If the target brand is relatively unknown/small (like "Preconet India" or "Preconet") and the competitor brands (like "Ahrefs", "Semrush", or others) are well known, be realistic: the target brand should receive a very low or 0 visibility score if the LLM would not realistically recommend it.
+
+3. The competitor Share of Voice (SOV) percentage for each brand:
+   SOV = Brand Visibility Score / (Sum of all Brands' Visibility Scores) * 100.
+   Ensure that the SOV percentages sum to 100% (or represent the portion among these compared brands).
+   If competitor brands were not specified in the input, dynamically identify the top 2-3 direct competitor companies/agencies of the same type in this niche (ensure they match the business type of the target brand—for example, if the target is a custom development/marketing agency, pick similar development agencies/companies, NOT SaaS software tools, DIY website builders like Wix/Shopify, or freelance platforms like Toptal/Upwork), compare the target brand against them, and include them in the prompts, overallScores, and shareOfVoice lists.
+
+4. A list of 5 optimization recommendations for the target brand to increase its visibility in these models.
+
+Format the output strictly as a JSON object with this shape:
+{
+  "prompts": [
+    {
+      "query": "...",
+      "volume": 1200,
+      "brandPerformance": [
+        {
+          "brand": "BrandName",
+          "status": "cited" | "mentioned" | "none",
+          "rank": 1 | 2 | 3 | null,
+          "sentiment": "positive" | "neutral" | "negative",
+          "score": 85
+        }
+      ]
+    }
+  ],
+  "overallScores": [
+    {
+      "brand": "BrandName",
+      "visibilityScore": 45,
+      "citationRate": 60,
+      "mentionRate": 80
+    }
+  ],
+  "shareOfVoice": [
+    {
+      "brand": "BrandName",
+      "sov": 45.2
+    }
+  ],
+  "modelBreakdown": {
+    "ChatGPT": 35,
+    "Gemini": 40,
+    "Claude": 20,
+    "Perplexity": 50
+  },
+  "recommendations": [
+    "..."
+  ]
+}
+
+Do not return any other text, markdown blocks, or code blocks outside the JSON. Return only the JSON object.
+`;
+
+    const aiRes = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: apiPrompt }],
+      temperature: 0.3,
+      response_format: { type: "json_object" }
+    });
+
+    const parsed = JSON.parse(aiRes.choices[0].message.content);
+    return res.json(parsed);
+  } catch (error) {
+    console.error("AI Visibility Audit API Error:", error);
+    return res.status(500).json({ error: "An error occurred on either our side or your network: " + error.message });
+  }
+});
+
 module.exports = router;
