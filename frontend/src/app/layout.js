@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "SEO Dashboard - Local SEO & Web Insights",
   description: "Track website authority, search visibility, backlink profile, and Google Business Profile performance in one SEO dashboard.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({ children }) {

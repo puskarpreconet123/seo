@@ -95,8 +95,8 @@ export default function AuditPage() {
         {activeTab === "overview" && (
           <div className="space-y-6">
             <SeoStatsOverview />
-            <SeoScoreCharts />
             <SiteAuditWidget auditData={seoData.website.technicalAudit} />
+            <SeoScoreCharts />
           </div>
         )}
 

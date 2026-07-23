@@ -1,5 +1,5 @@
-import React from 'react';
-import { AlertCircle, AlertTriangle, Info, CheckCircle2, Activity, Settings, Layout, Image as ImageIcon, Code2 } from 'lucide-react';
+import React from "react";
+import { AlertCircle, AlertTriangle, Info, CheckCircle2, Activity, Layout, Image as ImageIcon, Code2 } from "lucide-react";
 
 export default function SeoStatsOverview() {
   return (
@@ -43,64 +43,87 @@ export default function SeoStatsOverview() {
         </div>
       </div>
 
-      {/* Bottom Row: Category Scores */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        
-        <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-2 mb-3">
-            <Activity className="w-4 h-4 text-slate-400" />
-            <h4 className="text-[12px] font-bold text-slate-600 uppercase tracking-wide">Performance</h4>
+      {/* Bottom Row: Category Scores (4 Columns - Technical SEO removed as it is shown in Audit Overview) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Performance */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 flex flex-col shadow-xs hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-rose-500" />
+              <h4 className="text-[12px] font-bold text-slate-600 uppercase tracking-wide">Performance</h4>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-100">
+              Needs Work
+            </span>
           </div>
           <div className="flex items-baseline gap-1 mt-auto">
             <span className="text-3xl font-light text-rose-500">30</span>
             <span className="text-[13px] font-medium text-slate-400">/100</span>
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-2 mb-3">
-            <Settings className="w-4 h-4 text-slate-400" />
-            <h4 className="text-[12px] font-bold text-slate-600 uppercase tracking-wide">Technical SEO</h4>
-          </div>
-          <div className="flex items-baseline gap-1 mt-auto">
-            <span className="text-3xl font-light text-amber-500">63</span>
-            <span className="text-[13px] font-medium text-slate-400">/100</span>
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div className="bg-rose-500 h-full rounded-full" style={{ width: "30%" }}></div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-2 mb-3">
-            <Layout className="w-4 h-4 text-slate-400" />
-            <h4 className="text-[12px] font-bold text-slate-600 uppercase tracking-wide">On-Page SEO</h4>
+        {/* On-Page SEO */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 flex flex-col shadow-xs hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Layout className="w-4 h-4 text-blue-500" />
+              <h4 className="text-[12px] font-bold text-slate-600 uppercase tracking-wide">On-Page SEO</h4>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">
+              Good
+            </span>
           </div>
           <div className="flex items-baseline gap-1 mt-auto">
             <span className="text-3xl font-light text-blue-500">73</span>
             <span className="text-[13px] font-medium text-slate-400">/100</span>
           </div>
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div className="bg-blue-500 h-full rounded-full" style={{ width: "73%" }}></div>
+          </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-2 mb-3">
-            <ImageIcon className="w-4 h-4 text-slate-400" />
-            <h4 className="text-[12px] font-bold text-slate-600 uppercase tracking-wide">Image SEO</h4>
+        {/* Image SEO */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 flex flex-col shadow-xs hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-blue-500" />
+              <h4 className="text-[12px] font-bold text-slate-600 uppercase tracking-wide">Image SEO</h4>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">
+              Good
+            </span>
           </div>
           <div className="flex items-baseline gap-1 mt-auto">
             <span className="text-3xl font-light text-blue-500">71</span>
             <span className="text-[13px] font-medium text-slate-400">/100</span>
           </div>
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div className="bg-blue-500 h-full rounded-full" style={{ width: "71%" }}></div>
+          </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-2 mb-3">
-            <Code2 className="w-4 h-4 text-slate-400" />
-            <h4 className="text-[12px] font-bold text-slate-600 uppercase tracking-wide">Schema</h4>
+        {/* Schema */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 flex flex-col shadow-xs hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Code2 className="w-4 h-4 text-rose-500" />
+              <h4 className="text-[12px] font-bold text-slate-600 uppercase tracking-wide">Schema</h4>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-100">
+              Missing
+            </span>
           </div>
           <div className="flex items-baseline gap-1 mt-auto">
             <span className="text-3xl font-light text-rose-500">0</span>
             <span className="text-[13px] font-medium text-slate-400">/100</span>
           </div>
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div className="bg-rose-500 h-full rounded-full" style={{ width: "0%" }}></div>
+          </div>
         </div>
-
       </div>
     </div>
   );
