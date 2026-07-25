@@ -2,9 +2,29 @@ const express = require("express");
 const router = express.Router();
 const SEORecord = require("../models/SEORecord");
 const GBPRecord = require("../models/GBPRecord");
-const seoScraper = require("../services/seoScraper");
 const gbpService = require("../services/gbpService");
 const aeoGeoService = require("../services/aeoGeoService");
+
+// Deep audit service imports
+const { crawlUrl } = require("../services/crawler.js");
+const { parseSeoElements } = require("../services/parser.js");
+const { runSeoEvaluation, calculateSeoScoreReport } = require("../services/evaluator.js");
+const { runOnpageAnalysis } = require("../services/onpageAnalyzer.js");
+const { runImageSeoAnalysis } = require("../services/imageAnalyzer.js");
+const { runLinkAnalysis } = require("../services/linkAnalyzer.js");
+const { runSchemaAnalysis } = require("../services/schemaAnalyzer.js");
+const { runRobotsSitemapAnalysis } = require("../services/robotsSitemapAnalyzer.js");
+const { runPriorityEngine } = require("../services/priorityEngine.js");
+const { runStructureAnalysis } = require("../services/structureAnalyzer.js");
+const { runChecklistGeneration } = require("../services/checklistGenerator.js");
+const { executePageSpeedAudits } = require("../services/pagespeedService.js");
+const {
+  generateAiSeoOptimizations,
+  generateAiKeywordIdeas,
+  generateAiContentOptimization,
+  generateAiSeoActionPlan,
+  runContentAnalysis
+} = require("../services/ai.js");
 
 /**
  * Helper to generate stable keywords and traffic statistics for any domain
@@ -52,7 +72,12 @@ const getSeededSEOMetrics = (domain, seed) => {
 
 // GET /api/seo-data?domain=<domain>
 router.get("/seo-data", async (req, res) => {
+  const startTime = Date.now();
+  console.log(`\n--------------------------------------------------`);
+  console.log(`[PIPELINE START] Processing SEO Analysis Pipeline...`);
+
   try {
+    // PIPELINE STEP 1: Input Normalization
     const rawDomain = req.query.domain ? req.query.domain.trim().toLowerCase() : "example.com";
     let domain = rawDomain;
     if (rawDomain.includes("://")) {
@@ -67,8 +92,9 @@ router.get("/seo-data", async (req, res) => {
     if (domain.startsWith("www.")) {
       domain = domain.substring(4);
     }
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    console.log(`[Pipeline Step 1/6] Domain normalized: "${domain}" (raw input: "${rawDomain}")`);
 
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const hashString = (str) => {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
@@ -81,58 +107,192 @@ router.get("/seo-data", async (req, res) => {
     let seoRecord = null;
     let gbpRecord = null;
 
+    // PIPELINE STEP 2: Database Retrieval
+    console.log(`[Pipeline Step 2/6] Checking database cache (MongoDB / Memory)...`);
     if (global.useMemoryDb) {
-      // Memory DB Lookup
       seoRecord = global.memoryDb.seoRecords.get(domain);
       gbpRecord = global.memoryDb.gbpRecords.get(domain);
+      console.log(`[Pipeline Step 2/6] Retrieved from Memory DB: SEO Record=${!!seoRecord}, GBP Record=${!!gbpRecord}`);
     } else {
-      // MongoDB Lookup
       seoRecord = await SEORecord.findOne({ domain });
       gbpRecord = await GBPRecord.findOne({ domain });
+      console.log(`[Pipeline Step 2/6] Retrieved from MongoDB: SEO Record=${!!seoRecord}, GBP Record=${!!gbpRecord}`);
     }
 
-    const isSeoStale = !seoRecord || 
+    const forceRefresh = req.query.force === 'true' || req.query.refresh === 'true';
+    const isSeoStale = forceRefresh ||
+                       !seoRecord || 
                        seoRecord.updatedAt < oneDayAgo || 
                        !seoRecord.aeoGeo || 
                        !seoRecord.aeoGeo.scrapedUrls || 
                        seoRecord.aeoGeo.scrapedUrls.length === 0;
-    const isGbpStale = !gbpRecord || gbpRecord.updatedAt < oneDayAgo;
+    const isGbpStale = forceRefresh || !gbpRecord || gbpRecord.updatedAt < oneDayAgo;
 
-    // 2. Fetch/update SEO details if stale
+    console.log(`[Pipeline Step 2/6] Audit Stale Evaluation: SEO Stale=${isSeoStale}, GBP Stale=${isGbpStale}, ForceRefresh=${forceRefresh}`);
+
+    // PIPELINE STEP 3 & 4: Deep Web Crawl & Intelligence Processing
     if (isSeoStale) {
-      console.log(`SEO metrics stale/missing for ${domain}. crawling...`);
-      const crawlResults = await seoScraper.scrapeDomain(domain);
+      console.log(`[Pipeline Step 3/6] Initiating live web crawl & diagnostic audit for https://${domain}...`);
+      const targetUrl = `https://${domain}`;
+      const crawlResult = await crawlUrl(targetUrl);
+
+      let fullAudit = null;
+      let technicalAudit = null;
+      let schemaAnalysisReport = null;
+
+      if (crawlResult.success && crawlResult.html) {
+        console.log(`[Pipeline Step 4/6] Crawl succeeded (${crawlResult.html.length} bytes). Running analytical engines...`);
+        try {
+          const baseUrl = crawlResult.final_url || targetUrl;
+          const seoData = parseSeoElements(crawlResult.html, baseUrl);
+          crawlResult.seo_data = seoData;
+
+          const resultsTemp = { seo_data: seoData, requested_url: targetUrl };
+          const h1s = seoData.headings?.h1 || [];
+          const primaryH1 = h1s[0] || null;
+
+          console.log(`[Pipeline Step 4/6] Executing parallel SEO analysis modules...`);
+          const group1Results = await Promise.all([
+            runSeoEvaluation(crawlResult, seoData).catch(() => ({ passed: [], warnings: [], critical: [] })),
+            runImageSeoAnalysis(seoData, baseUrl).catch(() => null),
+            runLinkAnalysis(seoData, baseUrl).catch(() => null),
+            runSchemaAnalysis(seoData).catch(() => null),
+            runRobotsSitemapAnalysis(baseUrl).catch(() => null),
+            generateAiKeywordIdeas(seoData.title, seoData.meta_description, primaryH1, seoData.page_content).catch(() => null),
+            runContentAnalysis(resultsTemp).catch(() => null),
+            executePageSpeedAudits(baseUrl, { ...resultsTemp, response_time_ms: crawlResult.response_time_ms }).catch(() => null)
+          ]);
+
+          const seoReport = group1Results[0];
+          const imageSeoReport = group1Results[1];
+          const linkAnalysisReport = group1Results[2];
+          schemaAnalysisReport = group1Results[3];
+          const robotsSitemapReport = group1Results[4];
+          const keywordIdeas = group1Results[5];
+          const contentAnalysis = group1Results[6];
+          const pagespeedReport = group1Results[7];
+
+          const [seoScore, issueSummary] = calculateSeoScoreReport(seoReport);
+          const onpageReport = runOnpageAnalysis(seoData, crawlResult);
+
+          crawlResult.seo_report = seoReport;
+          crawlResult.seo_score = seoScore;
+          crawlResult.issue_summary = issueSummary;
+          crawlResult.onpage_report = onpageReport;
+          crawlResult.image_seo_report = imageSeoReport;
+          crawlResult.link_analysis_report = linkAnalysisReport;
+          crawlResult.schema_analysis_report = schemaAnalysisReport;
+          crawlResult.robots_sitemap_report = robotsSitemapReport;
+          crawlResult.content_analysis = contentAnalysis;
+
+          const defaultPageSpeed = {
+            mobile: { performance: 50, seo: 50, accessibility: 50, best_practices: 50, metrics: {}, recommendations: [], success: false },
+            desktop: { performance: 50, seo: 50, accessibility: 50, best_practices: 50, metrics: {}, recommendations: [], success: false }
+          };
+
+          const psData = pagespeedReport || defaultPageSpeed;
+          crawlResult.pagespeed = psData;
+          crawlResult.mobile = psData.mobile;
+          crawlResult.desktop = psData.desktop;
+
+          const m = psData.mobile || {};
+          const d = psData.desktop || {};
+          const mobileAvg = Math.round(((m.performance || 0) + (m.seo || 0) + (m.accessibility || 0) + (m.best_practices || 0)) / 4);
+          const desktopAvg = Math.round(((d.performance || 0) + (d.seo || 0) + (d.accessibility || 0) + (d.best_practices || 0)) / 4);
+          const averageOverallScore = Math.round(((m.performance || 0) + (m.seo || 0) + (m.accessibility || 0) + (m.best_practices || 0) +
+                                       (d.performance || 0) + (d.seo || 0) + (d.accessibility || 0) + (d.best_practices || 0)) / 8);
+
+          const rawSeoScore = Math.round((seoScore + (m.seo || 0) + (d.seo || 0)) / 3);
+
+          crawlResult.seo_score = rawSeoScore;
+          crawlResult.health_score = averageOverallScore;
+          crawlResult.desktop_score = desktopAvg;
+          crawlResult.mobile_score = mobileAvg;
+          crawlResult.average_overall_score = averageOverallScore;
+
+          const priorityRes = runPriorityEngine(crawlResult);
+          crawlResult.priority_issues = priorityRes.priority_issues;
+
+          console.log(`[Pipeline Step 4/6] Executing AI optimizations & plan generators...`);
+          const group2Results = await Promise.all([
+            generateAiSeoOptimizations(seoScore, seoData, seoReport, priorityRes.priority_issues).catch(() => null),
+            generateAiContentOptimization(seoData.title, seoData.meta_description, primaryH1, seoData.headings, seoData.page_content, seoReport).catch(() => null)
+          ]);
+
+          crawlResult.ai_analysis = group2Results[0];
+          crawlResult.ai_content_optimization = group2Results[1];
+          crawlResult.keyword_ideas = keywordIdeas;
+
+          const group3Results = await Promise.all([
+            generateAiSeoActionPlan(crawlResult).catch(() => null),
+            runStructureAnalysis(crawlResult).catch(() => null),
+            runChecklistGeneration(crawlResult).catch(() => null)
+          ]);
+
+          crawlResult.seo_action_plan = group3Results[0];
+          crawlResult.structure_analysis = group3Results[1];
+          crawlResult.seo_checklist = group3Results[2];
+
+          fullAudit = crawlResult;
+          technicalAudit = {
+            healthScore: averageOverallScore,
+            criticals: (onpageReport?.critical || []).length,
+            warnings: (onpageReport?.warnings || []).length,
+            passed: (onpageReport?.passed || []).length,
+            topIssues: priorityRes.priority_issues.slice(0, 5)
+          };
+          console.log(`[Pipeline Step 4/6] Calculated Scores -> Health: ${averageOverallScore}, SEO Score: ${rawSeoScore}, Desktop: ${desktopAvg}, Mobile: ${mobileAvg}`);
+        } catch (err) {
+          console.error("[Pipeline Step 4/6] Deep audit processing failed:", err);
+        }
+      }
+
+      // Lightweight fallback if Playwright fails
+      if (!fullAudit) {
+        console.warn(`[Pipeline Step 3/6] Deep crawl returned no audit. Crawl failed.`);
+        return res.status(400).json({ 
+          error: crawlResult.error_message || "Could not fetch or verify the domain. Please check if the domain is accessible." 
+        });
+      }
+
       const seededMetrics = getSeededSEOMetrics(domain, seed);
       const aeoGeoMetrics = {
-        ...aeoGeoService.analyzeDomain(domain, crawlResults.html, crawlResults.combinedHtml),
-        scrapedUrls: crawlResults.scrapedUrls || []
+        ...aeoGeoService.analyzeDomain(domain, fullAudit?.html || null, fullAudit?.html || null),
+        scrapedUrls: fullAudit?.scrapedUrls || [`https://${domain}`]
       };
 
       const recordData = {
         domain,
-        authorityScore: crawlResults.authorityScore,
-        technicalAudit: crawlResults.technicalAudit,
+        authorityScore: fullAudit?.authority_score || 35,
+        technicalAudit: technicalAudit,
+        schemaAnalysisReport: schemaAnalysisReport || fullAudit?.schema_analysis_report,
+        fullAudit: fullAudit,
         ...seededMetrics,
         aeoGeo: aeoGeoMetrics,
         updatedAt: new Date(),
       };
 
+      // PIPELINE STEP 5: MongoDB Persistence
+      console.log(`[Pipeline Step 5/6] Persisting SEO record to MongoDB...`);
       if (global.useMemoryDb) {
         global.memoryDb.seoRecords.set(domain, recordData);
         seoRecord = recordData;
+        console.log(`[Pipeline Step 5/6] Saved to Memory DB successfully.`);
       } else {
         if (seoRecord) {
           seoRecord = await SEORecord.findOneAndUpdate({ domain }, recordData, { new: true });
+          console.log(`[Pipeline Step 5/6] Updated existing MongoDB document for "${domain}".`);
         } else {
           seoRecord = new SEORecord(recordData);
           await seoRecord.save();
+          console.log(`[Pipeline Step 5/6] Saved new MongoDB document for "${domain}".`);
         }
       }
     }
 
-    // 3. Fetch/update GBP details if stale
+    // GBP Details
     if (isGbpStale) {
-      console.log(`GBP details stale/missing for ${domain}. Fetching details...`);
+      console.log(`[Pipeline Step 5/6] Fetching/updating GBP profile data for ${domain}...`);
       const profileData = await gbpService.getBusinessProfileData(domain);
       
       const recordData = {
@@ -167,14 +327,16 @@ router.get("/seo-data", async (req, res) => {
       }
     }
 
-    // 4. Combine and send payload
+    // PIPELINE STEP 6: Payload Formatting & Response
+    console.log(`[Pipeline Step 6/6] Assembly of full dashboard payload for domain "${seoRecord.domain}"...`);
     const formattedData = {
       domain: seoRecord.domain,
-      lastUpdated: seoRecord.updatedAt.toLocaleDateString("en-US", {
+      lastUpdated: seoRecord.updatedAt ? new Date(seoRecord.updatedAt).toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
         year: "numeric",
-      }),
+      }) : "Recently",
+      schema_analysis_report: seoRecord.schemaAnalysisReport,
       website: {
         authorityScore: seoRecord.authorityScore,
         organicTraffic: seoRecord.organicTraffic,
@@ -189,9 +351,10 @@ router.get("/seo-data", async (req, res) => {
         trafficTrend: seoRecord.trafficTrend,
         topKeywords: seoRecord.topKeywords,
         technicalAudit: seoRecord.technicalAudit,
+        fullAudit: seoRecord.fullAudit
       },
       aeoGeo: seoRecord.aeoGeo || aeoGeoService.analyzeDomain(domain, null),
-      gbp: {
+      gbp: gbpRecord ? {
         businessName: gbpRecord.businessName,
         rating: gbpRecord.rating,
         reviewsCount: gbpRecord.reviewsCount,
@@ -199,15 +362,20 @@ router.get("/seo-data", async (req, res) => {
         interactions: gbpRecord.interactions,
         localKeywords: gbpRecord.localKeywords,
         recentReviews: gbpRecord.recentReviews,
-      },
+      } : null,
     };
+
+    const duration = Date.now() - startTime;
+    console.log(`[PIPELINE SUCCESS] Analysis complete for "${domain}" in ${duration}ms.`);
+    console.log(`--------------------------------------------------\n`);
 
     return res.json(formattedData);
   } catch (err) {
-    console.error("GET /api/seo-data error:", err);
+    console.error("[PIPELINE ERROR] Failed during SEO data processing pipeline:", err);
     return res.status(500).json({ error: "Failed to gather SEO intelligence data" });
   }
 });
+
 
 // POST /api/seo-data/gbp/reply
 router.post("/seo-data/gbp/reply", async (req, res) => {

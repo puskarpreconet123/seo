@@ -43,11 +43,13 @@ const SEORecordSchema = new mongoose.Schema(
     topKeywords: [KeywordSchema],
     technicalAudit: {
       healthScore: { type: Number, default: 100 },
-      errors: { type: Number, default: 0 },
+      criticals: { type: Number, default: 0 },
       warnings: { type: Number, default: 0 },
-      notices: { type: Number, default: 0 },
+      passed: { type: Number, default: 0 },
       topIssues: [AuditIssueSchema],
     },
+    schemaAnalysisReport: mongoose.Schema.Types.Mixed,
+    fullAudit: mongoose.Schema.Types.Mixed,
     aeoGeo: {
       aeoScore: { type: Number, default: 0 },
       geoScore: { type: Number, default: 0 },
