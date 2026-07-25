@@ -1,51 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ListChecks, CheckCircle2, XCircle } from 'lucide-react';
 
-const CHECKLIST_DATA = [
-  // Technical SEO (5/5)
-  { status: 'success', check: 'HTTPS/SSL Security', category: 'Technical SEO', recommendation: 'Site is secured over HTTPS using SSL.', priority: 'Low' },
-  { status: 'success', check: 'Robots.txt File Configuration', category: 'Technical SEO', recommendation: 'Robots.txt is correctly configured.', priority: 'Low' },
-  { status: 'success', check: 'XML Sitemap', category: 'Technical SEO', recommendation: 'XML sitemap exists and is valid.', priority: 'Low' },
-  { status: 'success', check: 'Canonical Tag Configuration', category: 'Technical SEO', recommendation: 'Canonical tag is correctly declared: https://preconetindia.com/', priority: 'Low' },
-  { status: 'success', check: 'Search Engine Indexability', category: 'Technical SEO', recommendation: 'Page indexation is not blocked by search engines.', priority: 'Low' },
-  
-  // On Page SEO (5/5)
-  { status: 'success', check: 'Page Title Length (30-60 chars)', category: 'On Page SEO', recommendation: 'Page title length is optimal (59 chars).', priority: 'Low' },
-  { status: 'success', check: 'Meta Description Length (50-160 chars)', category: 'On Page SEO', recommendation: 'Meta description length is optimal (142 chars).', priority: 'Low' },
-  { status: 'success', check: 'Single H1 Header Tag', category: 'On Page SEO', recommendation: 'Exactly one H1 tag is configured.', priority: 'Low' },
-  { status: 'success', check: 'H2/H3 Subheadings Structure', category: 'On Page SEO', recommendation: 'Subheadings exist to structure content.', priority: 'Low' },
-  { status: 'success', check: 'Friendly URL Slug', category: 'On Page SEO', recommendation: 'URL slug is SEO friendly.', priority: 'Low' },
-  
-  // Content SEO (2/5)
-  { status: 'success', check: 'Content Word Count (>= 300)', category: 'Content SEO', recommendation: 'Page has a solid word count (430 words).', priority: 'Low' },
-  { status: 'success', check: 'Content Readability', category: 'Content SEO', recommendation: 'Flesch Reading Ease score is readable (65).', priority: 'Low' },
-  { status: 'error', check: 'Semantic Topical Coverage', category: 'Content SEO', recommendation: 'Add related LSI keyword concepts to enrich content depth.', priority: 'Medium' },
-  { status: 'error', check: 'Unique Content (No Duplicate Text)', category: 'Content SEO', recommendation: 'Rewrite repetitive or copy-pasted paragraph blocks.', priority: 'Medium' },
-  { status: 'error', check: 'Optimal Headings (No Keyword Stuffing)', category: 'Content SEO', recommendation: 'Refactor unnatural keyword-stuffed headings.', priority: 'Low' },
-  
-  // Image SEO (3/3)
-  { status: 'success', check: 'Image Alt Attributes', category: 'Image SEO', recommendation: 'All image elements have ALT attributes.', priority: 'Low' },
-  { status: 'success', check: 'Optimized Image Payloads', category: 'Image SEO', recommendation: 'All images are compressed and optimized.', priority: 'Low' },
-  { status: 'success', check: 'Broken Image Elements', category: 'Image SEO', recommendation: 'No broken image assets detected.', priority: 'Low' },
-  
-  // Schema (0/3)
-  { status: 'error', check: 'JSON-LD Schema Markup', category: 'Schema', recommendation: 'Add JSON-LD structure metadata to support rich snippets.', priority: 'Medium' },
-  { status: 'error', check: 'Valid Schema Syntax', category: 'Schema', recommendation: 'Resolve syntax warnings and errors in your schema declarations.', priority: 'High' },
-  { status: 'error', check: 'Recommended Schema Entity Types', category: 'Schema', recommendation: 'Configure recommended schema entities (Organization, Website, or Article).', priority: 'Medium' },
-  
-  // Performance (0/5)
-  { status: 'error', check: 'First Contentful Paint (FCP <= 2.5s)', category: 'Performance', recommendation: 'Improve FCP (3412.86 ms). Optimize render-blocking CSS/JS resources.', priority: 'Medium' },
-  { status: 'error', check: 'Largest Contentful Paint (LCP <= 3.0s)', category: 'Performance', recommendation: 'Improve LCP (4912.86 ms). Defer offscreen images and preload critical elements.', priority: 'High' },
-  { status: 'error', check: 'Cumulative Layout Shift (CLS <= 0.1)', category: 'Performance', recommendation: 'Improve CLS (0.8). Set explicit height and width on dynamic frames.', priority: 'High' },
-  { status: 'error', check: 'Time To First Byte (TTFB <= 800ms)', category: 'Performance', recommendation: 'Improve TTFB server latency (2602.86 ms). Enable edge-caching.', priority: 'Medium' },
-  { status: 'error', check: 'Page Load Time (<= 4.0s)', category: 'Performance', recommendation: 'Reduce heavy payloads to lower load time (8000.0 ms).', priority: 'Medium' },
-  
-  // Links (2/4)
-  { status: 'error', check: 'Dead/Broken Internal & External Links', category: 'Links', recommendation: 'Fix the 2 dead links returning error status codes.', priority: 'High' },
-  { status: 'success', check: 'Redirect Chains Optimization', category: 'Links', recommendation: 'No redirect chain links found.', priority: 'Low' },
-  { status: 'error', check: 'Descriptive Link Anchors (No Empty Anchors)', category: 'Links', recommendation: 'Add descriptive texts to the 1 links with empty anchors.', priority: 'Medium' },
-  { status: 'success', check: 'Unique Anchor Destinations', category: 'Links', recommendation: 'Anchor texts are distinct per destination.', priority: 'Low' },
-];
+const CHECKLIST_DATA = []
 
 const priorityConfig = {
   'High': 'bg-rose-500 text-white',

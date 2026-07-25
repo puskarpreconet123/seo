@@ -21,7 +21,7 @@ export default function OrganicPage() {
           </p>
         </div>
       </div>
-      <KeywordTable keywords={seoData.website.topKeywords} />
+      <KeywordTable keywords={seoData?.website?.topKeywords || []} />
     </div>
   );
 }

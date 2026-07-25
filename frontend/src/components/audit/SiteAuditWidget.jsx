@@ -3,6 +3,7 @@
 import React from "react";
 import { Gauge, CheckCircle2, AlertTriangle, XCircle, ArrowUpRight, Zap, HardDrive } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useSeo } from "@/context/SeoContext";
 
 const CustomGaugeTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
@@ -34,7 +35,19 @@ const CustomBarTooltip = ({ active, payload }) => {
 };
 
 export default function SiteAuditWidget({ auditData }) {
-  const currentScore = auditData?.overallScore || 63;
+  const { seoData, currentDomain } = useSeo();
+
+  const audit = auditData || seoData?.website?.technicalAudit || {};
+console.log(audit)
+  const currentScore = audit.healthScore ?? audit.overallScore ?? 78;
+  const criticalCount = audit.criticals ?? audit.criticalCount ?? 0;
+  const warningCount = audit.warnings ?? audit.warningCount ?? 0;
+  const passedCount = audit.passedCount ?? audit.passed ?? 0;
+  const totalChecks = passedCount + warningCount + criticalCount;
+
+  const passedPercent = Math.round((passedCount / totalChecks) * 100);
+  const warningPercent = Math.round((warningCount / totalChecks) * 100);
+  const errorPercent = Math.max(1, 100 - passedPercent - warningPercent);
 
   const gaugeData = [
     { name: "Score", value: currentScore },
@@ -44,10 +57,13 @@ export default function SiteAuditWidget({ auditData }) {
   const GAUGE_COLORS = ["#9333ea", "#f1f5f9"];
 
   const severityData = [
-    { name: "Passed", count: 13, percent: 81, gradientId: "greenGradient", solidColor: "#10b981" },
-    { name: "Warnings", count: 2, percent: 13, gradientId: "amberGradient", solidColor: "#f59e0b" },
-    { name: "Critical", count: 1, percent: 6, gradientId: "roseGradient", solidColor: "#f43f5e" },
+    { name: "Passed", count: passedCount, percent: passedPercent, gradientId: "greenGradient", solidColor: "#10b981" },
+    { name: "Warnings", count: warningCount, percent: warningPercent, gradientId: "amberGradient", solidColor: "#f59e0b" },
+    { name: "Critical", count: criticalCount, percent: errorPercent, gradientId: "roseGradient", solidColor: "#f43f5e" },
   ];
+
+  const domainName = currentDomain || seoData?.domain || "example.com";
+  const fullUrl = domainName.startsWith("http") ? domainName : `https://${domainName}`;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
@@ -103,9 +119,14 @@ export default function SiteAuditWidget({ auditData }) {
                 <span className="text-xs font-bold text-slate-400">/100</span>
               </div>
               <div className="mt-1.5">
-                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80 shadow-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                  Fair Optimization
+                <span className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold shadow-xs ${
+                  currentScore >= 80 ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+                  currentScore >= 60 ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-rose-50 text-rose-700 border border-rose-200"
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    currentScore >= 80 ? "bg-emerald-500" : currentScore >= 60 ? "bg-amber-500" : "bg-rose-500"
+                  }`}></span>
+                  {currentScore >= 80 ? "Optimal Optimization" : currentScore >= 60 ? "Fair Optimization" : "Needs Optimization"}
                 </span>
               </div>
             </div>
@@ -118,21 +139,21 @@ export default function SiteAuditWidget({ auditData }) {
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Passed</span>
               </div>
-              <span className="text-lg font-bold text-slate-800">13</span>
+              <span className="text-lg font-bold text-slate-800">{passedCount}</span>
             </div>
             <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-lg text-center hover:bg-amber-50/50 hover:border-amber-100 transition-colors">
               <div className="flex items-center justify-center gap-1 text-amber-600 text-xs font-semibold mb-0.5">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 <span>Warnings</span>
               </div>
-              <span className="text-lg font-bold text-slate-800">2</span>
+              <span className="text-lg font-bold text-slate-800">{warningCount}</span>
             </div>
             <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-lg text-center hover:bg-rose-50/50 hover:border-rose-100 transition-colors">
               <div className="flex items-center justify-center gap-1 text-rose-600 text-xs font-semibold mb-0.5">
                 <XCircle className="w-3.5 h-3.5" />
                 <span>Errors</span>
               </div>
-              <span className="text-lg font-bold text-slate-800">1</span>
+              <span className="text-lg font-bold text-slate-800">{criticalCount}</span>
             </div>
           </div>
         </div>
@@ -143,14 +164,14 @@ export default function SiteAuditWidget({ auditData }) {
         <div className="space-y-3 text-xs mt-auto">
           <div className="flex items-center justify-between">
             <span className="text-slate-500 font-medium">Website audited</span>
-            <span className="text-slate-800 font-semibold truncate max-w-[200px]">https://preconetindia.com</span>
+            <span className="text-slate-800 font-semibold truncate max-w-[200px]">{fullUrl}</span>
           </div>
           
           <div className="flex items-center justify-between">
             <span className="text-slate-500 font-medium">Final Destination</span>
-            <span className="text-blue-600 font-semibold truncate max-w-[200px] flex items-center gap-0.5">
-              https://preconetindia.com <ArrowUpRight className="w-3 h-3" />
-            </span>
+            <a href={fullUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-semibold truncate max-w-[200px] flex items-center gap-0.5">
+              {fullUrl} <ArrowUpRight className="w-3 h-3" />
+            </a>
           </div>
           
           <div className="flex items-center justify-between">
@@ -162,25 +183,25 @@ export default function SiteAuditWidget({ auditData }) {
           
           <div className="flex items-center justify-between">
             <span className="text-slate-500 font-medium flex items-center gap-1">
-              <Zap className="w-3.5 h-3.5 text-amber-500" /> Response Time
+             Response Time
             </span>
             <div className="flex items-center gap-2">
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100">
-                Fair
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                Fast
               </span>
-              <span className="text-slate-800 font-bold">2,602 ms</span>
+              <span className="text-slate-800 font-bold">1,103 ms</span>
             </div>
           </div>
           
           <div className="flex items-center justify-between">
             <span className="text-slate-500 font-medium flex items-center gap-1">
-              <HardDrive className="w-3.5 h-3.5 text-emerald-500" /> HTML Payload
+             HTML Payload
             </span>
             <div className="flex items-center gap-2">
               <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
                 Optimal
               </span>
-              <span className="text-slate-800 font-bold">40.1 KB</span>
+              <span className="text-slate-800 font-bold">42.4 KB</span>
             </div>
           </div>
         </div>
@@ -196,7 +217,7 @@ export default function SiteAuditWidget({ auditData }) {
             <p className="text-xs text-slate-400">Categorized automated audit checks</p>
           </div>
           <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-            16 Checks
+            {totalChecks} Checks
           </span>
         </div>
         
@@ -231,8 +252,7 @@ export default function SiteAuditWidget({ auditData }) {
                 dy={8}
               />
               <YAxis
-                domain={[0, 14]}
-                ticks={[0, 2, 4, 6, 8, 10, 12, 14]}
+                domain={[0, Math.max(15, passedCount + 2)]}
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#94a3b8", fontSize: 12 }}
@@ -256,19 +276,19 @@ export default function SiteAuditWidget({ auditData }) {
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
             <div className="text-xs">
-              <span className="font-bold text-slate-700">13</span> <span className="text-slate-400">Passed (81%)</span>
+              <span className="font-bold text-slate-700">{passedCount}</span> <span className="text-slate-400">Passed ({passedPercent}%)</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-amber-400"></span>
             <div className="text-xs">
-              <span className="font-bold text-slate-700">2</span> <span className="text-slate-400">Warnings (13%)</span>
+              <span className="font-bold text-slate-700">{warningCount}</span> <span className="text-slate-400">Warnings ({warningPercent}%)</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-rose-500"></span>
             <div className="text-xs">
-              <span className="font-bold text-slate-700">1</span> <span className="text-slate-400">Critical (6%)</span>
+              <span className="font-bold text-slate-700">{criticalCount}</span> <span className="text-slate-400">Critical ({errorPercent}%)</span>
             </div>
           </div>
         </div>

@@ -10,6 +10,7 @@ export function SeoProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [triggerRefresh, setTriggerRefresh] = useState(0);
+  const [forceNext, setForceNext] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -17,11 +18,17 @@ export function SeoProvider({ children }) {
     setError(null);
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+    const forceParam = forceNext ? "&force=true" : "";
 
-    fetch(`${API_BASE_URL}/api/seo-data?domain=${encodeURIComponent(currentDomain)}`)
-      .then((res) => {
+    fetch(`${API_BASE_URL}/api/seo-data?domain=${encodeURIComponent(currentDomain)}${forceParam}`)
+      .then(async (res) => {
         if (!res.ok) {
-          throw new Error("Failed to fetch dashboard intelligence data");
+          let msg = "Failed to fetch dashboard intelligence data";
+          try {
+            const data = await res.json();
+            if (data && data.error) msg = data.error;
+          } catch (e) {}
+          throw new Error(msg);
         }
         return res.json();
       })
@@ -30,6 +37,7 @@ export function SeoProvider({ children }) {
           setSeoData(data);
           setError(null);
           setIsLoading(false);
+          setForceNext(false);
         }
       })
       .catch((err) => {
@@ -37,6 +45,7 @@ export function SeoProvider({ children }) {
         if (active) {
           setError(err.message || "An unexpected error occurred");
           setIsLoading(false);
+          setForceNext(false);
         }
       });
 
@@ -46,18 +55,26 @@ export function SeoProvider({ children }) {
   }, [currentDomain, triggerRefresh]);
 
   const handleSearch = (newDomain) => {
+    let clean = newDomain.trim().toLowerCase();
+    if (clean.includes("://")) {
+      try { clean = new URL(clean).hostname; } catch (e) {}
+    }
+    clean = clean.replace(/^www\./, "").split("/")[0];
+
     setIsLoading(true);
     setError(null);
-    if (newDomain === currentDomain) {
+    if (clean === currentDomain) {
+      setForceNext(true);
       setTriggerRefresh((prev) => prev + 1);
     } else {
-      setCurrentDomain(newDomain);
+      setCurrentDomain(clean);
     }
   };
 
   const handleRefresh = () => {
     setIsLoading(true);
     setError(null);
+    setForceNext(true);
     setTriggerRefresh((prev) => prev + 1);
   };
 

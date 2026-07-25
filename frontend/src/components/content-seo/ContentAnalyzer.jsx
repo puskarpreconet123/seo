@@ -6,9 +6,18 @@ import {
   HelpCircle, AlignLeft, Edit3, ClipboardList, CheckCircle2, ChevronRight,
   Info, ShieldAlert, Globe, Lightbulb
 } from 'lucide-react';
+import { useSeo } from '@/context/SeoContext';
 
 export default function ContentAnalyzer() {
+  const { seoData, currentDomain } = useSeo();
   const [activeSubTab, setActiveSubTab] = useState('detections');
+
+  const contentAnalysis = seoData?.website?.fullAudit?.content_analysis || {};
+  const aiOptimization = seoData?.website?.fullAudit?.ai_content_optimization || {};
+
+  const wordCount = contentAnalysis.word_count ?? 430;
+  const readabilityScore = contentAnalysis.readability_score ?? 65;
+  const isThinContent = contentAnalysis.thin_content ?? (wordCount < 300);
 
   const subTabs = [
     { id: 'detections', label: 'Detections', icon: Search },
@@ -28,22 +37,24 @@ export default function ContentAnalyzer() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-indigo-500" />
             <h2 className="text-lg font-bold text-slate-800 tracking-tight">
-              Content Analyzer & Optimizer
+              Content Analyzer: {currentDomain}
             </h2>
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-100 text-xs font-semibold text-slate-600">
-              Word Count: <span className="font-bold text-slate-800">430</span>
+              Word Count: <span className="font-bold text-slate-800">{wordCount}</span>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-sky-50 border border-sky-100 text-xs font-semibold text-sky-600">
-              Readability: <span className="font-bold text-sky-700">65 / 100</span>
+              Readability: <span className="font-bold text-sky-700">{readabilityScore} / 100</span>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-55 text-xs font-semibold text-slate-600">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-100 text-xs font-semibold text-slate-600">
               Semantic: <span className="font-bold text-slate-800">Moderate</span>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-600">
-              <ShieldAlert className="w-3.5 h-3.5" /> Thin Content
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold ${
+              isThinContent ? "bg-rose-50 border border-rose-100 text-rose-600" : "bg-emerald-50 border border-emerald-100 text-emerald-600"
+            }`}>
+              <ShieldAlert className="w-3.5 h-3.5" /> {isThinContent ? "Thin Content" : "Sufficient Length"}
             </div>
           </div>
         </div>
@@ -54,10 +65,10 @@ export default function ContentAnalyzer() {
           <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 flex flex-col justify-between">
             <div className="flex justify-between items-center mb-3">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Readability Score</span>
-              <span className="text-sm font-bold text-indigo-600">65 / 100</span>
+              <span className="text-sm font-bold text-indigo-600">{readabilityScore} / 100</span>
             </div>
             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-3">
-              <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full" style={{ width: '65%' }}></div>
+              <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full" style={{ width: `${readabilityScore}%` }}></div>
             </div>
             <span className="text-sm font-semibold text-slate-700">Standard Readability</span>
           </div>

@@ -80,7 +80,8 @@ export default function Sidebar({ isScrolled }) {
         {
           title: "Competitive Analysis",
           items: [
-            { id: "organic", name: "Organic Research", icon: Search }
+            { id: "organic", name: "Organic Research", icon: Search },
+            { id: "competitor", name: "Competitor Audit", icon: Globe }
           ]
         },
         {

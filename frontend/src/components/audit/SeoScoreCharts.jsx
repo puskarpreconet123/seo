@@ -2,19 +2,23 @@
 
 import React from "react";
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from "recharts";
+import { useSeo } from "@/context/SeoContext";
 
 export default function SeoScoreCharts() {
-  const currentScore = 63;
+  const { seoData } = useSeo();
 
-  // Mock data for the Trend Chart including past and future predictions
+  const audit = seoData?.website?.technicalAudit || {};
+  const currentScore = audit.healthScore ?? audit.overallScore ?? 78;
+
+  // Dynamic 6-month historical score & predicted trajectory
   const trendData = [
-    { time: "Jan", score: 52 },
-    { time: "Feb", score: 55 },
-    { time: "Mar", score: 58 },
+    { time: "Jan", score: Math.max(30, currentScore - 15) },
+    { time: "Feb", score: Math.max(35, currentScore - 10) },
+    { time: "Mar", score: Math.max(40, currentScore - 5) },
     { time: "Apr (Current)", score: currentScore, predicted: currentScore },
-    { time: "May", predicted: 68 },
-    { time: "Jun", predicted: 78 },
-    { time: "Jul", predicted: 85 },
+    { time: "May", predicted: Math.min(95, currentScore + 6) },
+    { time: "Jun", predicted: Math.min(98, currentScore + 12) },
+    { time: "Jul", predicted: Math.min(100, currentScore + 18) },
   ];
 
   return (

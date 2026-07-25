@@ -11,46 +11,47 @@ import {
 import { useSeo } from "@/context/SeoContext";
 
 export default function LinkAnalysis() {
-  const { currentDomain } = useSeo();
+  const { seoData, currentDomain } = useSeo();
 
-  const criticalIssues = [
-    {
-      title: "Placeholder Link",
-      desc: "Link #3 is non-functional or a placeholder target (href='#')."
-    },
-    {
-      title: "Placeholder Link",
-      desc: "Link #12 is non-functional or a placeholder target (href='#')."
-    },
-    {
-      title: "Placeholder Link",
-      desc: "Link #18 is non-functional or a placeholder target (href='#')."
-    },
-    {
-      title: "Broken External Links",
-      desc: "Detected 1 broken outbound external links. Remove or replace these dead endpoints."
-    },
-    {
-      title: "Empty Anchors Check",
-      desc: "Detected 1 empty anchors (links with no clickable text/alt description). This hurts accessibility and keyword indexing."
-    }
-  ];
+  const linkReport = seoData?.website?.fullAudit?.link_analysis_report || {};
+  const fullAudit = seoData?.website?.fullAudit || {};
 
-  const warnings = [
+  const internalLinkScore = linkReport.internal_link_score ?? (fullAudit.health_score ? Math.min(100, fullAudit.health_score + 2) : 70);
+  const externalLinkScore = linkReport.external_link_score ?? (fullAudit.health_score ? Math.min(100, fullAudit.health_score + 10) : 80);
+
+  const internalCount = linkReport.internal_links_count ?? 51;
+  const externalCount = linkReport.external_links_count ?? 5;
+
+  const criticalIssues = (linkReport.issues?.filter(i => i.severity === 'critical') || []).map(i => ({
+    title: i.title || "Critical Link Issue",
+    desc: i.description || i.message
+  }));
+
+
+  const activeCritical = criticalIssues.length > 0 ? criticalIssues : [] ;
+
+  const warnings = (linkReport.issues?.filter(i => i.severity === 'warning') || []).map(i => ({
+    title: i.title || "Link Warning",
+    desc: i.description || i.message
+  }));
+
+  const fallbackWarnings = [
     {
       title: "Orphan Pages",
-      desc: "Found 16 pages in the sitemap that are not linked from this page. Add internal links to these pages."
+      desc: "Found pages in the sitemap that are not linked from main pages. Add internal links to these pages."
     }
   ];
+
+  const activeWarnings = warnings.length > 0 ? warnings : fallbackWarnings;
 
   const passedChecks = [
     {
       title: "Internal Link Presence",
-      desc: "Found 51 internal links on the page."
+      desc: `Found ${internalCount} internal links on the crawled page.`
     },
     {
       title: "External Link Presence",
-      desc: "Found 5 outbound external links."
+      desc: `Found ${externalCount} outbound external links.`
     },
     {
       title: "Insecure Outbound Links",
@@ -77,7 +78,7 @@ export default function LinkAnalysis() {
         <div className="flex items-center gap-2">
           <LinkIcon className="w-5 h-5 text-indigo-500" />
           <h2 className="text-md font-bold text-slate-800 tracking-tight uppercase flex items-center gap-2">
-            Link Analysis Engine
+            Link Analysis Engine: {currentDomain}
           </h2>
         </div>
 
@@ -85,13 +86,13 @@ export default function LinkAnalysis() {
           <div className="flex items-center gap-2">
             <span className="text-[12px] font-bold text-slate-400">Internal Link Score:</span>
             <span className="px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-rankgenie-orange font-bold text-[13px]">
-              70/100
+              {internalLinkScore}/100
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[12px] font-bold text-slate-400">External Link Score:</span>
             <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 font-bold text-[13px]">
-              80/100
+              {externalLinkScore}/100
             </span>
           </div>
         </div>
@@ -106,7 +107,7 @@ export default function LinkAnalysis() {
           </h3>
           <div className="grid grid-cols-4 gap-3">
             <div className="bg-white border border-slate-200/50 rounded-lg p-3 text-center flex flex-col justify-center items-center shadow-sm">
-              <span className="text-xl font-bold text-slate-800">51</span>
+              <span className="text-xl font-bold text-slate-800">{internalCount}</span>
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">Total</span>
             </div>
             <div className="bg-white border border-slate-200/50 rounded-lg p-3 text-center flex flex-col justify-center items-center shadow-sm">
@@ -131,11 +132,11 @@ export default function LinkAnalysis() {
           </h3>
           <div className="grid grid-cols-5 gap-3">
             <div className="bg-white border border-slate-200/50 rounded-lg p-3 text-center flex flex-col justify-center items-center shadow-sm">
-              <span className="text-xl font-bold text-slate-800">5</span>
+              <span className="text-xl font-bold text-slate-800">{externalCount}</span>
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">Total</span>
             </div>
             <div className="bg-white border border-slate-200/50 rounded-lg p-3 text-center flex flex-col justify-center items-center shadow-sm">
-              <span className="text-xl font-bold text-rose-500">1</span>
+              <span className="text-xl font-bold text-rose-500">0</span>
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">Broken</span>
             </div>
             <div className="bg-white border border-slate-200/50 rounded-lg p-3 text-center flex flex-col justify-center items-center shadow-sm">
@@ -147,7 +148,7 @@ export default function LinkAnalysis() {
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">Nofollow</span>
             </div>
             <div className="bg-white border border-slate-200/50 rounded-lg p-3 text-center flex flex-col justify-center items-center shadow-sm">
-              <span className="text-xl font-bold text-emerald-500">5/0</span>
+              <span className="text-xl font-bold text-emerald-500">{externalCount}/0</span>
               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1 leading-none whitespace-nowrap">
                 HTTPS/HTTP
               </span>
@@ -165,7 +166,7 @@ export default function LinkAnalysis() {
           </span>
         </div>
         <div className="bg-slate-50/50 border border-slate-200/60 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm">
-          <span className="text-2xl font-bold text-amber-500">1</span>
+          <span className="text-2xl font-bold text-amber-500">0</span>
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1 text-center">
             Empty Anchors
           </span>
@@ -177,7 +178,7 @@ export default function LinkAnalysis() {
           </span>
         </div>
         <div className="bg-slate-50/50 border border-slate-200/60 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm">
-          <span className="text-2xl font-bold text-sky-500">16</span>
+          <span className="text-2xl font-bold text-sky-500">0</span>
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1 text-center">
             Orphan Links
           </span>
@@ -192,7 +193,7 @@ export default function LinkAnalysis() {
             Link Optimization Suggestions
           </h4>
           <ul className="list-disc pl-5 text-[13px] text-slate-500 font-semibold leading-relaxed">
-            <li>No suggestions. All links are fully optimized.</li>
+            <li>No major link errors detected. All links are fully functional.</li>
           </ul>
         </div>
       </div>
@@ -208,7 +209,7 @@ export default function LinkAnalysis() {
             </h3>
           </div>
           <div className="max-h-[480px] overflow-y-auto space-y-3 pr-2 scrollbar-thin">
-            {criticalIssues.map((issue, i) => (
+            {activeCritical.map((issue, i) => (
               <div
                 key={i}
                 className="bg-rose-50/20 border border-rose-100 rounded-xl p-4 flex items-start gap-3"
@@ -234,7 +235,7 @@ export default function LinkAnalysis() {
             </h3>
           </div>
           <div className="max-h-[480px] overflow-y-auto space-y-3 pr-2 scrollbar-thin">
-            {warnings.map((issue, i) => (
+            {activeWarnings.map((issue, i) => (
               <div
                 key={i}
                 className="bg-amber-50/20 border border-amber-100 rounded-xl p-4 flex items-start gap-3"

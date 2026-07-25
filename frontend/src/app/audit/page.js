@@ -11,11 +11,13 @@ import PagePerformanceAnalysis from "@/components/audit/PagePerformanceAnalysis"
 import PerformanceCharts from "@/components/audit/PerformanceCharts";
 import RobotsSitemapAnalyzer from "@/components/audit/RobotsSitemapAnalyzer";
 import SchemaStructuredDataAnalyzer from "@/components/audit/SchemaStructuredDataAnalyzer";
-import { Layers, RefreshCw, Download, Share2, FileText, Monitor, CheckCircle } from "lucide-react";
+import { Layers, RefreshCw, Download, Share2, FileText, Monitor } from "lucide-react";
 
 export default function AuditPage() {
-  const { seoData } = useSeo();
+  const { seoData, currentDomain, handleRefresh, isLoading } = useSeo();
   const [activeTab, setActiveTab] = useState("overview");
+
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -24,6 +26,23 @@ export default function AuditPage() {
     { id: "crawlability", label: "Crawlability & Indexing" },
     { id: "schema", label: "Structured Data" },
   ];
+
+  const handleExportPdf = () => {
+    const domain = currentDomain || "preconetindia.com";
+    window.open(`${API_BASE_URL}/api/reports/export?domain=${encodeURIComponent(domain)}&format=pdf`, "_blank");
+  };
+
+  const handleExportCsv = () => {
+    const domain = currentDomain || "preconetindia.com";
+    window.open(`${API_BASE_URL}/api/reports/export?domain=${encodeURIComponent(domain)}&format=csv`, "_blank");
+  };
+
+  const handleShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href);
+      alert("Page link copied to clipboard!");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -34,13 +53,13 @@ export default function AuditPage() {
             <div className="flex items-center gap-2">
               <Layers className="w-5 h-5 text-emerald-500" />
               <h2 className="text-xl font-bold text-slate-800 tracking-tight">
-                Site Audit: <span className="text-blue-600 font-semibold">preconetindia.com</span>
+                Site Audit: <span className="text-blue-600 font-semibold">{currentDomain || "preconetindia.com"}</span>
               </h2>
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-400">
-              <span>preconetindia.com</span>
+              <span>{currentDomain || "preconetindia.com"}</span>
               <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-              <span>Updated: Wed, Jul 15, 2026</span>
+              <span>Updated: {seoData?.lastUpdated || "Wed, Jul 15, 2026"}</span>
               <span className="w-1 h-1 rounded-full bg-slate-300"></span>
               <span className="flex items-center gap-1">
                 <Monitor className="w-3.5 h-3.5" /> Desktop
@@ -54,16 +73,29 @@ export default function AuditPage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-              <RefreshCw className="w-3.5 h-3.5" /> Rerun campaign
+            <button
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-blue-600" : ""}`} /> Rerun campaign
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-              <FileText className="w-3.5 h-3.5" /> PDF
+            <button
+              onClick={handleExportPdf}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5 text-rose-500" /> PDF
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-              <Download className="w-3.5 h-3.5" /> Export
+            <button
+              onClick={handleExportCsv}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-500" /> Export
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+            >
               <Share2 className="w-3.5 h-3.5" /> Share
             </button>
           </div>
@@ -95,7 +127,7 @@ export default function AuditPage() {
         {activeTab === "overview" && (
           <div className="space-y-6">
             <SeoStatsOverview />
-            <SiteAuditWidget auditData={seoData.website.technicalAudit} />
+            <SiteAuditWidget auditData={seoData?.website?.technicalAudit} />
             <SeoScoreCharts />
           </div>
         )}
