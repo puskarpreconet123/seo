@@ -257,7 +257,7 @@ router.get("/seo-data", async (req, res) => {
 
       const seededMetrics = getSeededSEOMetrics(domain, seed);
       const aeoGeoMetrics = {
-        ...aeoGeoService.analyzeDomain(domain, fullAudit?.html || null, fullAudit?.html || null),
+        ...aeoGeoService.analyzeDomain(domain, fullAudit?.html || null, fullAudit?.html || null, schemaAnalysisReport || fullAudit?.schema_analysis_report),
         scrapedUrls: fullAudit?.scrapedUrls || [`https://${domain}`]
       };
 
@@ -353,7 +353,7 @@ router.get("/seo-data", async (req, res) => {
         technicalAudit: seoRecord.technicalAudit,
         fullAudit: seoRecord.fullAudit
       },
-      aeoGeo: seoRecord.aeoGeo || aeoGeoService.analyzeDomain(domain, null),
+      aeoGeo: seoRecord.aeoGeo || aeoGeoService.analyzeDomain(domain, null, null, seoRecord.schemaAnalysisReport || seoRecord.fullAudit?.schema_analysis_report),
       gbp: gbpRecord ? {
         businessName: gbpRecord.businessName,
         rating: gbpRecord.rating,

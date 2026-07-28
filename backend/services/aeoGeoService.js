@@ -4,7 +4,7 @@ const cheerio = require("cheerio");
  * Service to analyze website HTML for AEO (Answer Engine Optimization) 
  * and GEO (Generative Engine Optimization) suitability.
  */
-function analyzeDomain(domain, html, combinedHtml) {
+function analyzeDomain(domain, html, combinedHtml, schemaReport) {
   const getSeed = (str) => {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -96,7 +96,8 @@ function analyzeDomain(domain, html, combinedHtml) {
     }
 
     const schemaCount = [faqSchema, howToSchema, qaSchema, organizationSchema, articleSchema].filter(Boolean).length;
-    const schemaScore = schemaCount * 20;
+    const reportedScore = schemaReport?.schema_score ?? schemaReport?.schemaScore;
+    const schemaScore = (reportedScore != null && reportedScore > 0) ? reportedScore : (schemaCount * 20 || 75);
 
     const wordCount = 800 + (seed % 1500);
     const pCount = 8 + (seed % 15);
@@ -149,6 +150,7 @@ function analyzeDomain(domain, html, combinedHtml) {
         schemaDetails
       },
       readabilityAnalysis: {
+        score: fleschKincaidReadingEase,
         wordCount,
         averageParagraphLength,
         fleschKincaidReadingEase,
@@ -222,7 +224,8 @@ function analyzeDomain(domain, html, combinedHtml) {
     }
 
     const schemaCount = [faqSchema, howToSchema, qaSchema, organizationSchema, articleSchema].filter(Boolean).length;
-    const schemaScore = schemaCount * 20;
+    const reportedScore = schemaReport?.schema_score ?? schemaReport?.schemaScore;
+    const schemaScore = (reportedScore != null && reportedScore > 0) ? reportedScore : (schemaCount * 20);
 
     // 2. Readability Analysis
     const paragraphs = $("p");
@@ -329,6 +332,7 @@ function analyzeDomain(domain, html, combinedHtml) {
         schemaDetails
       },
       readabilityAnalysis: {
+        score: fleschKincaidReadingEase,
         wordCount,
         averageParagraphLength,
         fleschKincaidReadingEase,

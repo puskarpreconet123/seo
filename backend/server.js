@@ -14,6 +14,7 @@ const analyticsRouter = require("./routes/analytics");
 const positionRouter = require("./routes/position");
 const competitorRouter = require("./routes/competitor");
 const assistantRouter = require("./routes/assistant");
+const contentRouter = require("./routes/content");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -54,6 +55,7 @@ app.use("/api/analytics", analyticsRouter);
 app.use("/api/position", positionRouter);
 app.use("/api/competitor", competitorRouter);
 app.use("/api/assistant", assistantRouter);
+app.use("/api/content", contentRouter);
 
 const mongoUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/seo_dashboard";
 
