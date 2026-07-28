@@ -40,10 +40,16 @@ export default function TopBar({ currentDomain, onSearch, lastUpdated, isLoading
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-1 bg-rankgenie-orange hover:bg-rankgenie-orange/95 text-white font-medium text-xs rounded-md shadow-sm transition-colors flex items-center gap-1.5 h-full"
+              className="px-4 py-1 bg-rankgenie-orange hover:bg-rankgenie-orange/95 text-white font-semibold text-xs rounded-md shadow-sm transition-all flex items-center gap-2 h-full disabled:opacity-90"
             >
               {isLoading ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <>
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white/90"></span>
+                  </span>
+                  <span>Scanning...</span>
+                </>
               ) : (
                 "Analyze"
               )}

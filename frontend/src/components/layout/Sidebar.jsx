@@ -112,13 +112,25 @@ export default function Sidebar({ isScrolled }) {
       id: "content",
       name: "Content Marketing",
       icon: Sparkles,
-      defaultTab: "writing-assistant",
+      defaultTab: "content-dashboard",
       categories: [
         {
-          title: "Content Ideas",
+          title: "",
           items: [
-            { id: "writing-assistant", name: "SEO Writing Assistant", icon: Sparkles },
-            { id: "topic-research", name: "Topic Research", icon: Search },
+            { id: "content-dashboard", name: "Dashboard", icon: LayoutDashboard },
+          ]
+        },
+        {
+          title: "Content Audit & Optimization",
+          items: [
+            { id: "content-seo", name: "Content SEO", icon: Search },
+          ]
+        },
+        {
+          title: "Content Creation",
+          items: [
+            { id: "content-generator", name: "Content Generator", icon: Sparkles },
+            { id: "writing-assistant", name: "Writing Assistant", icon: FileText },
           ]
         }
       ]

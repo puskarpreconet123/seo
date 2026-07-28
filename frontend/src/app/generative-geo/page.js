@@ -13,7 +13,9 @@ import {
   Check,
   Zap,
   Terminal,
-  Target
+  Target,
+  CheckCircle2,
+  RotateCw
 } from "lucide-react";
 
 export default function GenerativeGeoPage() {
@@ -84,6 +86,7 @@ export default function GenerativeGeoPage() {
   const textDensity = geoDataObj.textDensity || {};
   const keywords = geoDataObj.conversationalKeywords || [];
   const geoSuggestions = geoDataObj.suggestions || {};
+  const cleanDomainName = currentDomain ? currentDomain.split(".")[0] : "domain";
 
   const geoSolutions = [
     {
@@ -91,7 +94,7 @@ export default function GenerativeGeoPage() {
       name: 'Quantifiable Statistics Infusion',
       status: textDensity.factualDensityScore > 50 ? 'Passed' : 'Warning',
       instruction: 'Add concrete metrics, statistics, or chronological values. LLMs prioritize sentences featuring quantifiable numerical data when citing sources.',
-      defaultSuggestion: geoSuggestions.stats,
+      defaultSuggestion: geoSuggestions.stats || `<table>\n  <thead>\n    <tr><th>Metric</th><th>Performance Value</th></tr>\n  </thead>\n  <tbody>\n    <tr><td>Domain Citation Mentions</td><td>15,000+ per month</td></tr>\n    <tr><td>Average Answer Accuracy Score</td><td>84% Readiness</td></tr>\n  </tbody>\n</table>`,
       icon: AlignLeft,
       metric: 'Critical'
     },
@@ -100,7 +103,7 @@ export default function GenerativeGeoPage() {
       name: 'Author Credentials & Trust Indicators',
       status: textDensity.eeatScore > 50 ? 'Passed' : 'Warning',
       instruction: 'Include clear author credentials, affiliations, and expert tone profiles. Generative crawlers use credentials to measure authority values.',
-      defaultSuggestion: geoSuggestions.authority,
+      defaultSuggestion: geoSuggestions.authority || `<div class="author-bio">\n  <p><strong>Content Verified by Expert Panel</strong></p>\n  <p>Our editorial team features certified search experts with over a decade of technical and analytical experience in visibility optimization.</p>\n</div>`,
       icon: ShieldCheck,
       metric: 'High'
     },
@@ -109,20 +112,30 @@ export default function GenerativeGeoPage() {
       name: 'Direct Conversational Answers',
       status: keywords.length > 0 ? 'Passed' : 'Warning',
       instruction: 'Deploy direct, concise Q&A summary paragraphs. Generative engines crawl for clear answers explaining who, what, why, and how without unnecessary filler.',
-      defaultSuggestion: geoSuggestions.fluency,
+      defaultSuggestion: geoSuggestions.fluency || `<h3>How does ${cleanDomainName} provide value?</h3>\n<p>${cleanDomainName} automates comprehensive search engine readiness audits, helping businesses evaluate and fix conversational alignment issues.</p>`,
       icon: MessageSquare,
       metric: 'Medium'
     },
     {
       key: 'prompt',
       name: 'System Prompt Architecture',
-      status: 'Passed',
+      status: textDensity.informationGainScore > 50 ? 'Passed' : 'Warning',
       instruction: 'Configure the AI agent system prompt to enforce tone, factual consistency, and layout rules across all generative content.',
-      defaultSuggestion: geoSuggestions.prompt,
+      defaultSuggestion: geoSuggestions.prompt || `System Prompt: Optimized GEO Content Agent\nObjective: Optimize ${currentDomain} content for Generative Engines.\n\nRules:\n1. Infuse concrete statistics and factual metrics.\n2. Add authoritative author profiles (E-E-A-T).\n3. Structure sections using conversational Q&A prompts.`,
       icon: Terminal,
       metric: 'Vital'
     }
   ];
+
+  // Auto-trigger fix generation for non-passed items
+  useEffect(() => {
+    if (!currentDomain) return;
+    geoSolutions.forEach((sol) => {
+      if (sol.status !== 'Passed' && !fixes[sol.key] && !loadingFix[sol.key]) {
+        handleGenerateGeoFix(sol.key);
+      }
+    });
+  }, [currentDomain]);
 
   const geoColor = geoScore >= 80 ? 'text-emerald-500' : geoScore >= 50 ? 'text-blue-500' : 'text-rose-500';
   const geoStroke = geoScore >= 80 ? '#10b981' : geoScore >= 50 ? '#3b82f6' : '#f43f5e';
@@ -277,7 +290,10 @@ export default function GenerativeGeoPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {geoSolutions.map((sol, idx) => {
             const Icon = sol.icon;
-            const suggestionText = fixes[sol.key] || sol.defaultSuggestion;
+            const isPassed = sol.status === 'Passed';
+            // Show fix box ONLY by default if status is NOT Passed (or if user manually generated a fix)
+            const suggestionText = fixes[sol.key] || (!isPassed ? sol.defaultSuggestion : null);
+            const showFixContainer = Boolean(suggestionText);
             const isExpanded = expandedFix === sol.key;
             
             let statusColor = sol.status === 'Passed' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 
@@ -308,40 +324,54 @@ export default function GenerativeGeoPage() {
                   {sol.instruction}
                 </p>
 
-                {/* Generate Copywriting Action */}
+                {/* Generate / Show Copywriting Fix Action */}
                 <div className="mt-auto">
-                  {suggestionText ? (
+                  {showFixContainer ? (
                     <div className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
                       <div className="bg-white px-4 py-2 border-b border-slate-200 flex justify-between items-center shadow-sm">
                         <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5" /> AI Resolution
+                          <Sparkles className="w-3.5 h-3.5 text-blue-500" /> AI Resolution Fix
                         </span>
-                        <button
-                          onClick={() => handleCopyFix(sol.key, suggestionText)}
-                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
-                        >
-                          {copiedFixKey === sol.key ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleGenerateGeoFix(sol.key)}
+                            disabled={loadingFix[sol.key]}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold transition-all hover:shadow-sm active:scale-95 disabled:opacity-50"
+                            title="Regenerate AI Fix"
+                          >
+                            <RotateCw className={`w-3.5 h-3.5 text-blue-600 ${loadingFix[sol.key] ? 'animate-spin' : ''}`} />
+                            <span>{loadingFix[sol.key] ? "Regenerating..." : "Regenerate"}</span>
+                          </button>
+                          <button
+                            onClick={() => handleCopyFix(sol.key, suggestionText)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
+                            title="Copy Fix Code"
+                          >
+                            {copiedFixKey === sol.key ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                <span className="text-emerald-600 font-semibold">Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Copy</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                       <div className="p-4 bg-slate-50 max-h-40 overflow-y-auto">
                          <pre className="text-xs font-mono text-slate-700 whitespace-pre-wrap">{suggestionText}</pre>
                       </div>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => handleGenerateGeoFix(sol.key)}
-                      disabled={loadingFix[sol.key]}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-sm font-bold transition-colors disabled:opacity-50"
-                    >
-                      {loadingFix[sol.key] ? (
-                        <div className="w-5.5 h-5.5 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin"></div>
-                      ) : (
-                        <>
-                          <Zap className="w-4 h-4 text-blue-500" />
-                          Generate AI Fix
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center justify-between p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-100 text-xs font-semibold text-emerald-800">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <span>Optimization Passed — No fixes required.</span>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -352,3 +382,4 @@ export default function GenerativeGeoPage() {
     </div>
   );
 }
+

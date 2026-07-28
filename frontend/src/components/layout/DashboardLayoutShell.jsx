@@ -5,6 +5,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
 import { RefreshCw, ShieldAlert } from "lucide-react";
 import { useSeo } from "@/context/SeoContext";
+import SiteAnalysisLoader from "@/components/audit/SiteAnalysisLoader";
 
 export default function DashboardLayoutShell({ children }) {
   const { currentDomain, handleSearch, seoData, isLoading, error, handleRefresh } = useSeo();
@@ -22,14 +23,7 @@ export default function DashboardLayoutShell({ children }) {
 
   const renderInnerContent = () => {
     if (isLoading) {
-      return (
-        <div className="flex flex-col flex-1 items-center justify-center min-h-[400px]">
-          <RefreshCw className="w-8 h-8 text-rankgenie-orange animate-spin mb-3" />
-          <span className="text-sm font-semibold text-slate-500">
-            Analyzing {currentDomain}... Fetching SEO & Local search metrics
-          </span>
-        </div>
-      );
+      return <SiteAnalysisLoader domain={currentDomain} />;
     }
 
     if (error) {
@@ -72,7 +66,7 @@ export default function DashboardLayoutShell({ children }) {
         <main className="flex-1 p-6 min-w-0">
           <div className="max-w-7xl mx-auto space-y-6">
             {/* Quick Header */}
-            {!isLoading && seoData && (
+            {/* {!isLoading && seoData && (
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
@@ -92,7 +86,7 @@ export default function DashboardLayoutShell({ children }) {
                   </button>
                 </div>
               </div>
-            )}
+            )} */}
 
             {renderInnerContent()}
           </div>
