@@ -34,7 +34,8 @@ export default function DocumentEditor({
   isSaving,
   onSubmitNow,
   onDelete,
-  actionItemState
+  actionItemState,
+  readOnly = false
 }) {
   const [viewMode, setViewMode] = useState("normal"); // 'normal' | 'code'
   const editorRef = useRef(null);
@@ -212,7 +213,7 @@ export default function DocumentEditor({
           <button
             onClick={onClose}
             className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 hover:text-slate-800 transition-colors border border-slate-200 bg-white shadow-xs"
-            title="Back to Queue"
+            title={readOnly ? "Go Back" : "Back to Queue"}
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -226,44 +227,46 @@ export default function DocumentEditor({
         </div>
 
         {/* Global Save/Submit/Delete Actions */}
-        <div className="flex items-center gap-2 self-start md:self-center">
-          {item.status === "scheduled" && (
+        {!readOnly && (
+          <div className="flex items-center gap-2 self-start md:self-center">
+            {item.status === "scheduled" && (
+              <button
+                onClick={() => onSubmitNow(item._id)}
+                disabled={isBusy || isSaving}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isBusy === "submitting" ? (
+                  <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5 text-amber-300" />
+                )}
+                <span>Publish Now</span>
+              </button>
+            )}
+
             <button
-              onClick={() => onSubmitNow(item._id)}
-              disabled={isBusy || isSaving}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              onClick={onSave}
+              disabled={isSaving || isBusy}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
-              {isBusy === "submitting" ? (
+              {isSaving ? (
                 <RotateCw className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <Send className="w-3.5 h-3.5 text-amber-300" />
+                <Save className="w-3.5 h-3.5 text-purple-300" />
               )}
-              <span>Publish Now</span>
+              <span>Save Draft</span>
             </button>
-          )}
 
-          <button
-            onClick={onSave}
-            disabled={isSaving || isBusy}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
-          >
-            {isSaving ? (
-              <RotateCw className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Save className="w-3.5 h-3.5 text-purple-300" />
-            )}
-            <span>Save Draft</span>
-          </button>
-
-          <button
-            onClick={onDelete}
-            disabled={isSaving || isBusy}
-            className="p-2 border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 rounded-xl transition-colors disabled:opacity-50"
-            title="Delete Document"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
+            <button
+              onClick={onDelete}
+              disabled={isSaving || isBusy}
+              className="p-2 border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 rounded-xl transition-colors disabled:opacity-50"
+              title="Delete Document"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Editing Grid */}
@@ -303,8 +306,8 @@ export default function DocumentEditor({
                 </button>
               </div>
 
-              {/* Text formatting toolbar (only for Normal View) */}
-              {viewMode === "normal" && (
+              {/* Text formatting toolbar (only for Normal View and when not readOnly) */}
+              {viewMode === "normal" && !readOnly && (
                 <div className="flex flex-wrap items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-xs">
                   <button
                     onMouseDown={(e) => runCommand(e, "bold")}
@@ -393,6 +396,7 @@ export default function DocumentEditor({
                 className="w-full text-2xl md:text-3xl font-black text-slate-900 border-none outline-none focus:ring-0 placeholder-slate-200 pb-3 mb-6 bg-transparent border-b border-slate-100 focus:border-purple-300 transition-colors"
                 placeholder="Article Title..."
                 required
+                readOnly={readOnly}
               />
 
               {/* Editing Area */}
@@ -400,7 +404,7 @@ export default function DocumentEditor({
                 {viewMode === "normal" ? (
                   <div
                     ref={editorRef}
-                    contentEditable
+                    contentEditable={!readOnly}
                     onInput={handleInput}
                     className="editor-canvas flex-1 outline-none text-slate-800 text-sm leading-relaxed min-h-[450px]"
                     placeholder="Start writing your visual blog article contents..."
@@ -412,6 +416,7 @@ export default function DocumentEditor({
                     className="flex-1 w-full p-4 font-mono text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 min-h-[450px] leading-relaxed"
                     placeholder="<html>\n  <body>\n    Enter HTML block tags directly here...\n  </body>\n</html>"
                     required
+                    readOnly={readOnly}
                   />
                 )}
               </div>
@@ -440,6 +445,7 @@ export default function DocumentEditor({
                 onChange={(e) => setForm((prev) => ({ ...prev, keywords: e.target.value }))}
                 placeholder="Comma separated: keyword1, keyword2"
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+                readOnly={readOnly}
               />
               <p className="text-[10px] text-slate-400 font-medium">Used for live SEO analysis and keyword checks</p>
             </div>
@@ -462,6 +468,7 @@ export default function DocumentEditor({
                 onChange={(e) => setForm((prev) => ({ ...prev, summary: e.target.value }))}
                 placeholder="Enter a meta summary describing the article for search results..."
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all leading-relaxed"
+                readOnly={readOnly}
               />
               {summaryLength > 160 && (
                 <p className="text-[10px] text-rose-500 font-semibold flex items-center gap-1">

@@ -6,24 +6,18 @@ import { useSeo } from "@/context/SeoContext";
 import {
   Sparkles,
   FileText,
-  BookOpen,
   Edit3,
-  TrendingUp,
-  Search,
-  CheckCircle2,
-  AlertTriangle,
   ArrowRight,
   Zap,
   HelpCircle,
   BarChart2,
-  Copy,
-  Check
+  RotateCw
 } from "lucide-react";
 import AutoContentQueue from "@/components/content-seo/AutoContentQueue";
 
 export default function ContentMarketingDashboard() {
   const router = useRouter();
-  const { seoData, currentDomain } = useSeo();
+  const { currentDomain } = useSeo();
   const [ideas, setIdeas] = useState([]);
   const [isLoadingIdeas, setIsLoadingIdeas] = useState(false);
 
@@ -52,10 +46,6 @@ export default function ContentMarketingDashboard() {
     fetchIdeas();
   }, [currentDomain]);
 
-  const contentAnalysis = seoData?.website?.fullAudit?.content_analysis || {};
-  const wordCount = contentAnalysis.word_count || 430;
-  const readabilityScore = contentAnalysis.readability_score || 65;
-
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       
@@ -73,55 +63,6 @@ export default function ContentMarketingDashboard() {
       </div>
 
       <div className="space-y-8">
-        
-        {/* Top KPI Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Word Count Health</span>
-              <div className="p-2 bg-purple-50 rounded-xl text-purple-600">
-                <FileText className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-3xl font-black text-slate-900 mb-1">{wordCount}</p>
-            <p className="text-xs text-slate-500">
-              {wordCount < 300 ? "⚠️ Thin Content Detected" : "✓ Sufficient Length"}
-            </p>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Readability Score</span>
-              <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
-                <BookOpen className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-3xl font-black text-slate-900 mb-1">{readabilityScore} <span className="text-sm font-medium text-slate-400">/ 100</span></p>
-            <p className="text-xs text-slate-500">Flesch Reading Ease Grade</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">AI Content Ideas</span>
-              <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
-                <Sparkles className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-3xl font-black text-slate-900 mb-1">{ideas.length}</p>
-            <p className="text-xs text-slate-500">Target Keyword Briefs</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Organic Potential</span>
-              <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-3xl font-black text-emerald-600 mb-1">+4.2K</p>
-            <p className="text-xs text-slate-500">Est. Monthly Search Visits</p>
-          </div>
-        </div>
 
         {/* Automated 10/day Queue & 60-day Retention Engine */}
         <AutoContentQueue />
@@ -201,36 +142,47 @@ export default function ContentMarketingDashboard() {
             </span>
           </div>
 
-          <div className="space-y-4">
-            {ideas.map((idea) => (
-              <div
-                key={idea.id}
-                className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-50/70 hover:bg-slate-50 rounded-2xl border border-slate-200 gap-4 transition-all"
-              >
-                <div className="space-y-1">
-                  <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-purple-600 shrink-0" />
-                    {idea.title}
-                  </h4>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 font-medium">
-                    <span>Keyword: <strong className="text-slate-800">{idea.keyword}</strong></span>
-                    <span>•</span>
-                    <span>Intent: <strong className="text-purple-600">{idea.intent}</strong></span>
-                    <span>•</span>
-                    <span>Est. Traffic: <strong className="text-emerald-600">{idea.estimatedTraffic}</strong></span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => router.push("/content-generator")}
-                  className="shrink-0 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm"
+          {isLoadingIdeas ? (
+            <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-slate-50/50 rounded-2xl border border-slate-100">
+              <RotateCw className="w-6 h-6 animate-spin text-purple-600 mb-2" />
+              <p className="text-xs font-bold">Analyzing keywords & suggestions...</p>
+            </div>
+          ) : ideas.length === 0 ? (
+            <div className="text-center py-12 text-xs text-slate-400 font-bold bg-slate-50/50 rounded-2xl border border-slate-100">
+              No suggested briefs found for this domain.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {ideas.map((idea) => (
+                <div
+                  key={idea.id}
+                  className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-50/70 hover:bg-slate-50 rounded-2xl border border-slate-200 gap-4 transition-all"
                 >
-                  <span>Generate Post</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-purple-600 shrink-0" />
+                      {idea.title}
+                    </h4>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 font-medium">
+                      <span>Keyword: <strong className="text-slate-800">{idea.keyword}</strong></span>
+                      <span>•</span>
+                      <span>Intent: <strong className="text-purple-600">{idea.intent}</strong></span>
+                      <span>•</span>
+                      <span>Est. Traffic: <strong className="text-emerald-600">{idea.estimatedTraffic}</strong></span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => router.push("/content-generator")}
+                    className="shrink-0 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>Generate Post</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>

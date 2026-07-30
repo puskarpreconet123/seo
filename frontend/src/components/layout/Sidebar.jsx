@@ -20,7 +20,8 @@ import {
   Brain,
   Code,
   FileText,
-  Bot
+  Bot,
+  BookOpen
 } from "lucide-react";
 
 export default function Sidebar({ isScrolled }) {
@@ -124,6 +125,7 @@ export default function Sidebar({ isScrolled }) {
           title: "Content Audit & Optimization",
           items: [
             { id: "content-seo", name: "Content SEO", icon: Search },
+            { id: "content-library", name: "Content Library", icon: BookOpen },
           ]
         },
         {

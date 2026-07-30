@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { useSeo } from "@/context/SeoContext";
 import DocumentEditor from "./DocumentEditor";
 import {
@@ -20,8 +22,14 @@ import {
 } from "lucide-react";
 
 export default function AutoContentQueue() {
+  const router = useRouter();
   const { currentDomain } = useSeo();
   const [queueItems, setQueueItems] = useState([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [stats, setStats] = useState({
     totalGeneratedCount: 0,
     totalSubmittedCount: 0,
@@ -377,10 +385,17 @@ export default function AutoContentQueue() {
                         )}
 
                         {isFailed && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 border border-rose-200 text-rose-800 text-[10px] font-bold uppercase tracking-wider">
-                            <AlertCircle className="w-3 h-3 text-rose-600" />
-                            Submission Error
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 border border-rose-200 text-rose-800 text-[10px] font-bold uppercase tracking-wider w-max">
+                              <AlertCircle className="w-3 h-3 text-rose-600" />
+                              Submission Error
+                            </span>
+                            {item.submissionError && (
+                              <span className="text-[10px] text-rose-600 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-100 font-medium">
+                                Reason: {item.submissionError}
+                              </span>
+                            )}
+                          </div>
                         )}
 
                         {item.backlinkJobId && (
@@ -407,26 +422,34 @@ export default function AutoContentQueue() {
 
                     {/* Right Actions */}
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      {isScheduled && (
+                      {(isScheduled || isFailed) && (
                         <>
-                          <button
-                            onClick={() => openEditModal(item)}
-                            className="px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs"
-                          >
-                            <Edit3 className="w-3.5 h-3.5 text-purple-600" /> Edit Content
-                          </button>
+                          {isScheduled && (
+                            <button
+                              onClick={() => router.push(`/content-library?edit=${item._id}`)}
+                              className="px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs"
+                            >
+                              <Edit3 className="w-3.5 h-3.5 text-purple-600" /> Edit Content
+                            </button>
+                          )}
 
                           <button
                             onClick={() => handleSubmitNow(item._id)}
                             disabled={isBusy}
-                            className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                            className={`px-3.5 py-2 rounded-xl text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50 ${
+                              isFailed
+                                ? "bg-rose-600 hover:bg-rose-700"
+                                : "bg-purple-600 hover:bg-purple-700"
+                            }`}
                           >
                             {isBusy === 'submitting' ? (
                               <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : isFailed ? (
+                              <RotateCw className="w-3.5 h-3.5 text-rose-200" />
                             ) : (
                               <Send className="w-3.5 h-3.5 text-amber-300" />
                             )}
-                            <span>Submit Now</span>
+                            <span>{isFailed ? "Resubmit" : "Submit Now"}</span>
                           </button>
                         </>
                       )}
@@ -435,7 +458,7 @@ export default function AutoContentQueue() {
                         onClick={() => handleDeleteItem(item._id)}
                         disabled={isBusy}
                         className="p-2 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 transition-colors disabled:opacity-50"
-                        title="Delete from Queue"
+                        title={isFailed ? "Delete Failed Article" : "Delete from Queue"}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -465,7 +488,7 @@ export default function AutoContentQueue() {
 
 
       {/* Pipeline Settings Modal Drawer */}
-      {showSettingsModal && (
+      {showSettingsModal && mounted && createPortal(
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-[2rem] max-w-xl w-full p-6 md:p-8 shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
             
@@ -649,7 +672,8 @@ export default function AutoContentQueue() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
