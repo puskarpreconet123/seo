@@ -119,6 +119,40 @@ router.post("/auto-queue/add-manual", async (req, res) => {
   }
 });
 
+// GET /api/content/library
+router.get("/library", async (req, res) => {
+  const domain = (req.query.domain || "nxtcall.app").toLowerCase();
+
+  try {
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    const items = await AutoContent.find({
+      domain,
+      createdAt: { $gte: sixtyDaysAgo }
+    }).sort({ createdAt: -1 });
+
+    const now = Date.now();
+    const formatted = items.map((item) => {
+      const doc = item.toObject();
+      const schedTime = new Date(doc.scheduledForSubmissionAt).getTime();
+      const msRemaining = Math.max(0, schedTime - now);
+      const hoursRemaining = Math.floor(msRemaining / (1000 * 60 * 60));
+      const minsRemaining = Math.floor((msRemaining % (1000 * 60 * 60)) / (1000 * 60));
+
+      return {
+        ...doc,
+        hoursRemaining,
+        minsRemaining,
+        isEditable: doc.status === "scheduled" && msRemaining > 0,
+      };
+    });
+
+    return res.json({ success: true, items: formatted });
+  } catch (err) {
+    console.error("Error fetching library content:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/content/auto-queue
 router.get("/auto-queue", async (req, res) => {
   const domain = (req.query.domain || "nxtcall.app").toLowerCase();

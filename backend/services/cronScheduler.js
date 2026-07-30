@@ -5,7 +5,8 @@ const ContentSettings = require("../models/ContentSettings");
 const { generateAiArticleContent } = require("./aiContentGenerator");
 
 let schedulerTimer = null;
-const RANKGENI_SUBMIT_API = "https://rankgeni-backlink.onrender.com/api/v1/start-submission";
+let failedSchedulerTimer = null;
+const RANKGENI_SUBMIT_API = "https://rankgeni-backlink.onrender.com/api/submissions";
 
 // Helper to increment stats counter
 async function incrementStat(domain, fieldName, amount = 1) {
@@ -177,18 +178,18 @@ async function processPendingSubmissions() {
 // Single Article Submission Helper
 async function submitArticleToBacklinkEngine(item) {
   const payload = {
-    title: item.title,
-    summary: item.summary,
-    body: item.body,
-    keywords: item.keywords,
-    website: item.website,
-    company: item.company,
-    email: item.email,
-    phone: item.phone,
-    address: item.address,
-    channels: item.channels || ["micro_blogging", "articles", "press_releases", "social_booking", "rss_feeds", "guest_blogs"],
-    headless: true,
+    project_id: item._id ? item._id.toString() : "Postman Test Project",
+    title: item.title ? item.title : "title",
+    submitted_by: "Rankgenie",
+    description: item.body ? item.body : item.summary ? item.summary : "description",
+    website: item.website ? item.website : "www.example.com",
+    keywords: item.keywords ? item.keywords : "abc, def, ghi",
+    company: item.company ? item.company : "abc company",
+    email: item.email ? item.email : "abc@gmail.com",
+    phone: item.phone ? item.phone : "1234567890",
+    address: item.address ? item.address : "New York",
   };
+  console.log(payload)
 
   try {
     console.log(`[CronScheduler] Submitting item "${item.title}" (${item._id}) to ${RANKGENI_SUBMIT_API}...`);
@@ -199,15 +200,16 @@ async function submitArticleToBacklinkEngine(item) {
     });
 
     const resData = await response.json();
+    console.log(resData, "-------------------------")
     if (response.ok && resData.status === "success") {
       item.status = "submitted";
       item.submittedAt = new Date();
-      item.backlinkJobId = resData.job_id || "job_submitted";
+      item.backlinkJobId = resData.submission.id || "job_submitted";
       item.submissionError = "";
       await item.save();
 
       await incrementStat(item.domain, "totalSubmittedCount", 1);
-      console.log(`[CronScheduler] ✅ Article "${item.title}" successfully submitted! Job ID: ${resData.job_id}`);
+      console.log(`[CronScheduler] ✅ Article "${item.title}" successfully submitted! Job ID: ${resData.submission.id}`);
     } else {
       item.status = "failed";
       item.submissionError = resData.error || resData.message || "API Error";
@@ -260,7 +262,30 @@ async function processSixtyDayCleanup() {
   }
 }
 
-// 4. Run Daily Batch Generation for all registered SEORecords
+// 4. Retry Failed Submissions
+async function processFailedSubmissions() {
+  console.log("[CronScheduler] Checking for failed articles to resubmit...");
+  try {
+    const failedItems = await AutoContent.find({
+      status: "failed",
+    });
+
+    if (!failedItems.length) {
+      console.log("[CronScheduler] No failed articles to resubmit.");
+      return;
+    }
+
+    console.log(`[CronScheduler] Found ${failedItems.length} failed articles. Attempting resubmission...`);
+
+    for (const item of failedItems) {
+      await submitArticleToBacklinkEngine(item);
+    }
+  } catch (err) {
+    console.error("[CronScheduler] Error in processFailedSubmissions:", err.message);
+  }
+}
+
+// 5. Run Daily Batch Generation for all registered SEORecords
 async function runDailyBatchForAllSeoRecords() {
   try {
     const seoRecords = await SEORecord.find({}).select("domain");
@@ -281,19 +306,31 @@ function startCronScheduler() {
   if (schedulerTimer) {
     clearInterval(schedulerTimer);
   }
+  if (failedSchedulerTimer) {
+    clearInterval(failedSchedulerTimer);
+  }
   console.info("[CronScheduler] Starting automated 3-day Queue & 60-day Retention Scheduler...");
 
-  // Run initial check after 5 seconds
+  // Run initial check after 5 seconds, failed check after 10 seconds
   setTimeout(() => {
     processPendingSubmissions();
     processSixtyDayCleanup();
   }, 5000);
+
+  setTimeout(() => {
+    processFailedSubmissions();
+  }, 10000);
 
   // Check queue every 1 hour (3,600,000 ms)
   schedulerTimer = setInterval(() => {
     processPendingSubmissions();
     processSixtyDayCleanup();
   }, 3600000);
+
+  // Check failed submissions every 2 hours (7,200,000 ms)
+  failedSchedulerTimer = setInterval(() => {
+    processFailedSubmissions();
+  }, 7200000);
 }
 
 function stopCronScheduler() {
@@ -302,6 +339,11 @@ function stopCronScheduler() {
     schedulerTimer = null;
     console.info("[CronScheduler] Background scheduler stopped.");
   }
+  if (failedSchedulerTimer) {
+    clearInterval(failedSchedulerTimer);
+    failedSchedulerTimer = null;
+    console.info("[CronScheduler] Failed submissions auto-retry scheduler stopped.");
+  }
 }
 
 module.exports = {
@@ -309,6 +351,7 @@ module.exports = {
   runDailyBatchForAllSeoRecords,
   processPendingSubmissions,
   processSixtyDayCleanup,
+  processFailedSubmissions,
   submitArticleToBacklinkEngine,
   startCronScheduler,
   stopCronScheduler,
