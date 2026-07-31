@@ -168,11 +168,17 @@ export default function AutoContentQueue() {
         method: "POST",
       });
       const data = await res.json();
-      if (data.success) {
-        await fetchQueueData();
+      
+      // Always fetch updated queue data so the UI reflects the new state (submitted or failed)
+      await fetchQueueData();
+      
+      if (!data.success) {
+        alert(data.message || "Submission failed. Please check the error details on the card.");
       }
     } catch (err) {
       console.error("Failed to submit item now:", err);
+      alert("Network error: Failed to submit the article.");
+      await fetchQueueData();
     } finally {
       setActionItemState((prev) => ({ ...prev, [id]: null }));
     }
@@ -336,11 +342,11 @@ export default function AutoContentQueue() {
       <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-md space-y-6">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div>
-            <h3 className="text-base font-bold text-slate-900">Active Queue Pipeline</h3>
-            <p className="text-xs text-slate-500">Edit content before the 72-hour window closes or submit immediately</p>
+            <h3 className="text-base font-bold text-slate-900">Today's Content Pipeline</h3>
+            <p className="text-xs text-slate-500">Edit today's articles before the 72-hour window closes or submit immediately</p>
           </div>
           <span className="px-3 py-1 bg-purple-50 border border-purple-100 text-purple-700 text-xs font-bold rounded-full">
-            {queueItems.length} Items in Queue
+            {queueItems.length} Items Today
           </span>
         </div>
 

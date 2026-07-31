@@ -173,7 +173,10 @@ export default function ContentMarketingDashboard() {
                   </div>
 
                   <button
-                    onClick={() => router.push("/content-generator")}
+                    onClick={() => {
+                      const query = `?title=${encodeURIComponent(idea.title)}&keyword=${encodeURIComponent(idea.keyword)}`;
+                      router.push(`/content-generator${query}`);
+                    }}
                     className="shrink-0 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm"
                   >
                     <span>Generate Post</span>

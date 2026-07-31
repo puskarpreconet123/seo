@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useSeo } from "@/context/SeoContext";
 import {
   Sparkles,
@@ -23,10 +24,13 @@ import {
 
 export default function ContentGeneratorStudio() {
   const { currentDomain } = useSeo();
+  const searchParams = useSearchParams();
+  const queryTitle = searchParams ? (searchParams.get("title") || "") : "";
+  const queryKeyword = searchParams ? (searchParams.get("keyword") || "") : "";
 
   // Form State
-  const [topic, setTopic] = useState("");
-  const [primaryKeyword, setPrimaryKeyword] = useState("");
+  const [topic, setTopic] = useState(queryTitle);
+  const [primaryKeyword, setPrimaryKeyword] = useState(queryKeyword);
   const [contentType, setContentType] = useState("blog");
   const [tone, setTone] = useState("Authoritative");
   const [wordCountGoal, setWordCountGoal] = useState(1000);
@@ -375,9 +379,12 @@ export default function ContentGeneratorStudio() {
                         if (data.success) {
                           setCopiedMode("queue");
                           setTimeout(() => setCopiedMode(null), 3000);
+                        } else {
+                          alert(data.error || "Failed to add to queue");
                         }
                       } catch (e) {
                         console.error(e);
+                        alert("Network error: Failed to connect to server");
                       }
                     }}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-colors shadow-sm"
