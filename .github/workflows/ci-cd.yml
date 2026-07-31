@@ -1,0 +1,84 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  backend-ci:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install Backend Dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run Backend Require Validation
+        working-directory: backend
+        run: node check_requires.js
+
+      - name: Run Backend Unit Tests
+        working-directory: backend
+        run: npm test
+
+  frontend-ci:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run Frontend Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build Frontend (Next.js)
+        working-directory: frontend
+        run: npm run build
+
+  deploy:
+    name: Continuous Deployment (Render)
+    runs-on: ubuntu-latest
+    needs: [backend-ci, frontend-ci]
+    # Only deploy on pushes to main/master, not on PRs
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Deploy Backend to Render
+        env:
+          RENDER_DEPLOY_HOOK_BACKEND: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
+        if: env.RENDER_DEPLOY_HOOK_BACKEND != ''
+        run: |
+          echo "Triggering Render deploy for Backend..."
+          curl -f "$RENDER_DEPLOY_HOOK_BACKEND"
+
+      - name: Deploy Frontend to Render
+        env:
+          RENDER_DEPLOY_HOOK_FRONTEND: ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
+        if: env.RENDER_DEPLOY_HOOK_FRONTEND != ''
+        run: |
+          echo "Triggering Render deploy for Frontend..."
+          curl -f "$RENDER_DEPLOY_HOOK_FRONTEND"
