@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const SEORecord = require("../models/SEORecord");
 const GBPRecord = require("../models/GBPRecord");
+const BrandPreference = require("../models/BrandPreference");
+const AiVisibilityAudit = require("../models/AiVisibilityAudit");
 const gbpService = require("../services/gbpService");
 const aeoGeoService = require("../services/aeoGeoService");
 
@@ -652,6 +654,22 @@ router.post("/seo-data/brand-preference", async (req, res) => {
     : [];
 
   try {
+    const cleanPrompt = prompt.trim().toLowerCase();
+
+    // Check MongoDB cache first
+    const cachedResult = await BrandPreference.findOne({
+      domain: cleanDomain,
+      prompt: cleanPrompt
+    });
+
+    if (cachedResult) {
+      console.log(`[BrandPreference] Returning cached result for domain: ${cleanDomain}, prompt: "${prompt}"`);
+      return res.json({
+        results: cachedResult.results,
+        summary: cachedResult.summary
+      });
+    }
+
     const { OpenAI } = require("openai");
     const hasKey = !!process.env.OPENAI_API_KEY;
 
@@ -723,6 +741,23 @@ Do not return any other text, markdown blocks, or code blocks outside the JSON. 
     });
 
     const parsed = JSON.parse(aiRes.choices[0].message.content);
+
+    // Save result to cache
+    try {
+      const newCache = new BrandPreference({
+        domain: cleanDomain,
+        brandName,
+        competitors: cleanCompetitors,
+        prompt: cleanPrompt,
+        results: parsed.results,
+        summary: parsed.summary
+      });
+      await newCache.save();
+      console.log(`[BrandPreference] Cached new result for domain: ${cleanDomain}, prompt: "${prompt}"`);
+    } catch (saveErr) {
+      console.warn("[BrandPreference] Failed to save cache to MongoDB:", saveErr.message);
+    }
+
     return res.json(parsed);
   } catch (error) {
     console.error("Brand Preference API Error:", error);
@@ -744,6 +779,25 @@ router.post("/seo-data/ai-visibility-audit", async (req, res) => {
     : [];
 
   try {
+    const cleanNiche = niche.trim().toLowerCase();
+
+    // Check MongoDB cache first
+    const cachedResult = await AiVisibilityAudit.findOne({
+      domain: cleanDomain,
+      niche: cleanNiche
+    });
+
+    if (cachedResult) {
+      console.log(`[AiVisibilityAudit] Returning cached result for domain: ${cleanDomain}, niche: "${niche}"`);
+      return res.json({
+        prompts: cachedResult.prompts,
+        overallScores: cachedResult.overallScores,
+        shareOfVoice: cachedResult.shareOfVoice,
+        modelBreakdown: cachedResult.modelBreakdown,
+        recommendations: cachedResult.recommendations
+      });
+    }
+
     const { OpenAI } = require("openai");
     const hasKey = !!process.env.OPENAI_API_KEY;
 
@@ -844,6 +898,26 @@ Do not return any other text, markdown blocks, or code blocks outside the JSON. 
     });
 
     const parsed = JSON.parse(aiRes.choices[0].message.content);
+
+    // Save result to cache
+    try {
+      const newCache = new AiVisibilityAudit({
+        domain: cleanDomain,
+        brandName,
+        competitors: cleanCompetitors,
+        niche: cleanNiche,
+        prompts: parsed.prompts,
+        overallScores: parsed.overallScores,
+        shareOfVoice: parsed.shareOfVoice,
+        modelBreakdown: parsed.modelBreakdown,
+        recommendations: parsed.recommendations
+      });
+      await newCache.save();
+      console.log(`[AiVisibilityAudit] Cached new result for domain: ${cleanDomain}, niche: "${niche}"`);
+    } catch (saveErr) {
+      console.warn("[AiVisibilityAudit] Failed to save cache to MongoDB:", saveErr.message);
+    }
+
     return res.json(parsed);
   } catch (error) {
     console.error("AI Visibility Audit API Error:", error);

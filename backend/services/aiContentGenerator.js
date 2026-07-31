@@ -41,6 +41,12 @@ Parameters:
 - Writing Tone: "${tone}"
 - Target Word Count Goal: ~${wordCountGoal} words
 
+CRITICAL WRITING RULES TO HIT THE WORD COUNT GOAL:
+1. To satisfy the target word count goal of ~${wordCountGoal} words, you MUST write an exhaustive, deep-dive article.
+2. Structure the article with a minimum of 4 to 6 detailed sections using <h2> and <h3> tags.
+3. For each section, write at least 2 to 3 substantial paragraphs of 100-150 words each, complete with industry-specific context, concrete examples, and actionable advice.
+4. Do NOT write a brief overview or summary. Expand thoroughly on every concept to ensure the total body text length is close to the requested ${wordCountGoal} words.
+
 Output MUST be a JSON object with this exact structure:
 {
   "title": "<Catchy, click-worthy SEO Title under 60 chars>",

@@ -6,6 +6,7 @@ const { generateAiArticleContent } = require("./aiContentGenerator");
 
 let schedulerTimer = null;
 let failedSchedulerTimer = null;
+let dailyGenerationTimer = null;
 const RANKGENI_SUBMIT_API = "https://rankgeni-backlink.onrender.com/api/submissions";
 
 // Helper to increment stats counter
@@ -48,7 +49,15 @@ async function generateDailyContentBatch(targetDomain, requestedCount = null) {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  const existingTodayCount = await AutoContent.countDocuments({
+  // Count only automated content generated today for this domain
+  const existingAutomatedCount = await AutoContent.countDocuments({
+    domain,
+    isAutomated: true,
+    createdAt: { $gte: startOfDay },
+  });
+
+  // Count all content (automated + manual) generated today for this domain
+  const existingTotalCount = await AutoContent.countDocuments({
     domain,
     createdAt: { $gte: startOfDay },
   });
@@ -67,18 +76,29 @@ async function generateDailyContentBatch(targetDomain, requestedCount = null) {
   const activeKwList = userKeywords.length > 0 ? userKeywords : ["sales call tracking software", "ai crm lead management", "telephony analytics"];
 
   const dailyQuota = userSettings.dailyQuota || 10;
-  const remainingQuota = Math.max(0, dailyQuota - existingTodayCount);
+  
+  // Calculate remaining quota based on automated posts
+  const remainingQuota = Math.max(0, dailyQuota - existingAutomatedCount);
+  
+  // Calculate remaining capacity to not exceed the total cap of 10 posts per day
+  const remainingTotalCapacity = Math.max(0, 10 - existingTotalCount);
 
   // If user selected specific keywords (e.g., 4 keywords), target batch size matches the 4 keywords
   const defaultBatchSize = hasUserKeywords ? userSettings.targetKeywords.length : dailyQuota;
-  let countToGenerate = Math.min(requestedCount !== null ? requestedCount : defaultBatchSize, remainingQuota);
+  
+  // Capped by the remaining automated quota and the remaining total capacity
+  let countToGenerate = Math.min(
+    requestedCount !== null ? requestedCount : defaultBatchSize,
+    remainingQuota,
+    remainingTotalCapacity
+  );
 
   if (countToGenerate <= 0) {
-    console.log(`[CronScheduler] Domain ${domain} already has ${existingTodayCount}/${dailyQuota} items generated today. Skipping auto-generation.`);
+    console.log(`[CronScheduler] Domain ${domain} has ${existingAutomatedCount}/${dailyQuota} automated and ${existingTotalCount} total items today. Skipping auto-generation.`);
     return [];
   }
 
-  console.log(`[CronScheduler] Generating ${countToGenerate} LLM AI articles for ${domain} (Today's existing: ${existingTodayCount}, Target Quota: ${dailyQuota}, Target Keywords: ${userKeywords.length})...`);
+  console.log(`[CronScheduler] Generating ${countToGenerate} LLM AI articles for ${domain} (Today's existing automated: ${existingAutomatedCount}, total: ${existingTotalCount}, Target Quota: ${dailyQuota}, Target Keywords: ${userKeywords.length})...`);
 
   const articleTemplates = [
     (kw, d) => ({ title: `How ${d} Uses ${kw.toUpperCase()} to Accelerate Organic Search Growth`, kw: `${kw}, organic traffic` }),
@@ -189,7 +209,6 @@ async function submitArticleToBacklinkEngine(item) {
     phone: item.phone ? item.phone : "1234567890",
     address: item.address ? item.address : "New York",
   };
-  console.log(payload)
 
   try {
     console.log(`[CronScheduler] Submitting item "${item.title}" (${item._id}) to ${RANKGENI_SUBMIT_API}...`);
@@ -200,7 +219,6 @@ async function submitArticleToBacklinkEngine(item) {
     });
 
     const resData = await response.json();
-    console.log(resData, "-------------------------")
     if (response.ok && resData.status === "success") {
       item.status = "submitted";
       item.submittedAt = new Date();
@@ -292,9 +310,22 @@ async function runDailyBatchForAllSeoRecords() {
     const domains = seoRecords.map(r => r.domain).filter(Boolean);
     const targetDomains = domains.length ? Array.from(new Set(domains)) : ["nxtcall.app"];
 
-    console.log(`[CronScheduler] Running daily 10-article generation for ${targetDomains.length} domains...`);
+    console.log(`[CronScheduler] Running daily content generation check for ${targetDomains.length} domains...`);
     for (const domain of targetDomains) {
-      await generateDailyContentBatch(domain, 10);
+      const cleanDomain = domain.toLowerCase();
+      // Fetch user settings for the domain
+      const settings = await ContentSettings.findOne({ domain: cleanDomain });
+      
+      // Default to true if settings are not created yet (as per schema)
+      const autoFill = settings ? settings.autoFillRemaining : true;
+
+      if (autoFill) {
+        console.log(`[CronScheduler] Auto-generating daily content for domain: ${cleanDomain}`);
+        // Pass null so generateDailyContentBatch uses the settings' dailyQuota/keywords instead of a hardcoded value
+        await generateDailyContentBatch(cleanDomain, null);
+      } else {
+        console.log(`[CronScheduler] Auto-generation skipped for domain: ${cleanDomain} (autoFillRemaining is disabled in settings)`);
+      }
     }
   } catch (err) {
     console.error("[CronScheduler] Error in runDailyBatchForAllSeoRecords:", err.message);
@@ -309,9 +340,12 @@ function startCronScheduler() {
   if (failedSchedulerTimer) {
     clearInterval(failedSchedulerTimer);
   }
+  if (dailyGenerationTimer) {
+    clearInterval(dailyGenerationTimer);
+  }
   console.info("[CronScheduler] Starting automated 3-day Queue & 60-day Retention Scheduler...");
 
-  // Run initial check after 5 seconds, failed check after 10 seconds
+  // Run initial check after 5 seconds, failed check after 10 seconds, and daily generation after 15 seconds
   setTimeout(() => {
     processPendingSubmissions();
     processSixtyDayCleanup();
@@ -320,6 +354,10 @@ function startCronScheduler() {
   setTimeout(() => {
     processFailedSubmissions();
   }, 10000);
+
+  setTimeout(() => {
+    runDailyBatchForAllSeoRecords();
+  }, 15000);
 
   // Check queue every 1 hour (3,600,000 ms)
   schedulerTimer = setInterval(() => {
@@ -331,6 +369,11 @@ function startCronScheduler() {
   failedSchedulerTimer = setInterval(() => {
     processFailedSubmissions();
   }, 7200000);
+
+  // Run daily content generation every 24 hours (86,400,000 ms)
+  dailyGenerationTimer = setInterval(() => {
+    runDailyBatchForAllSeoRecords();
+  }, 86400000);
 }
 
 function stopCronScheduler() {
@@ -343,6 +386,11 @@ function stopCronScheduler() {
     clearInterval(failedSchedulerTimer);
     failedSchedulerTimer = null;
     console.info("[CronScheduler] Failed submissions auto-retry scheduler stopped.");
+  }
+  if (dailyGenerationTimer) {
+    clearInterval(dailyGenerationTimer);
+    dailyGenerationTimer = null;
+    console.info("[CronScheduler] Daily generation scheduler stopped.");
   }
 }
 

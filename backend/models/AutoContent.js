@@ -26,6 +26,7 @@ const AutoContentSchema = new mongoose.Schema(
     submittedAt: { type: Date },
     backlinkJobId: { type: String, default: "" },
     submissionError: { type: String, default: "" },
+    isAutomated: { type: Boolean, default: true, index: true },
     createdAt: { type: Date, default: Date.now, index: true },
   },
   { timestamps: true }

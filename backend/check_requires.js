@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
+let brokenCount = 0;
+
 function checkDir(currentDir) {
   fs.readdirSync(currentDir).forEach(file => {
     if (file === 'node_modules') return;
@@ -17,8 +19,9 @@ function checkDir(currentDir) {
         const resolved = path.resolve(path.dirname(fullPath), reqPath);
         const exists = fs.existsSync(resolved) || fs.existsSync(resolved + '.js') || fs.existsSync(resolved + '/index.js');
         if (!exists) {
-          console.log('Broken require in file:', fullPath);
-          console.log('  -> Path:', reqPath);
+          console.error('Broken require in file:', fullPath);
+          console.error('  -> Path:', reqPath);
+          brokenCount++;
         }
       }
     }
@@ -26,3 +29,12 @@ function checkDir(currentDir) {
 }
 
 checkDir(__dirname);
+
+if (brokenCount > 0) {
+  console.error(`\nValidation failed: ${brokenCount} broken require(s) found.`);
+  process.exit(1);
+} else {
+  console.log('\nAll require statements are valid.');
+  process.exit(0);
+}
+

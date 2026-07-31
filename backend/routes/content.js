@@ -74,6 +74,18 @@ router.post("/auto-queue/add-manual", async (req, res) => {
   }
 
   try {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const existingTotalCount = await AutoContent.countDocuments({
+      domain: cleanDomain,
+      createdAt: { $gte: startOfDay },
+    });
+
+    if (existingTotalCount >= 10) {
+      return res.status(400).json({ error: "Daily limit of 10 articles (manual + automated) reached for this domain." });
+    }
+
     const userSettings = await ContentSettings.findOne({ domain: cleanDomain });
     const cleanDomainName = cleanDomain.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0];
     const capitalizedSiteName = cleanDomainName.split(".")[0].toUpperCase();
@@ -98,6 +110,7 @@ router.post("/auto-queue/add-manual", async (req, res) => {
       phone: companyPhone,
       address: companyAddress,
       status: "scheduled",
+      isAutomated: false,
       scheduledForSubmissionAt: threeDaysLater,
       createdAt: now,
     });
@@ -158,7 +171,13 @@ router.get("/auto-queue", async (req, res) => {
   const domain = (req.query.domain || "nxtcall.app").toLowerCase();
 
   try {
-    const items = await AutoContent.find({ domain }).sort({ createdAt: -1 }).limit(50);
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const items = await AutoContent.find({
+      domain,
+      createdAt: { $gte: startOfDay }
+    }).sort({ createdAt: -1 });
     const now = Date.now();
 
     const formatted = items.map((item) => {
