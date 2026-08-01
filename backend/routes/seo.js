@@ -20,6 +20,7 @@ const { runPriorityEngine } = require("../services/priorityEngine.js");
 const { runStructureAnalysis } = require("../services/structureAnalyzer.js");
 const { runChecklistGeneration } = require("../services/checklistGenerator.js");
 const { executePageSpeedAudits } = require("../services/pagespeedService.js");
+const { runSubpageAudit } = require("../services/subpageAuditor.js");
 const {
   generateAiSeoOptimizations,
   generateAiKeywordIdeas,
@@ -141,6 +142,8 @@ router.get("/seo-data", async (req, res) => {
       let fullAudit = null;
       let technicalAudit = null;
       let schemaAnalysisReport = null;
+      let combinedHtml = "";
+      let cleanedSubpageReport = null;
 
       if (crawlResult.success && crawlResult.html) {
         console.log(`[Pipeline Step 4/6] Crawl succeeded (${crawlResult.html.length} bytes). Running analytical engines...`);
@@ -162,7 +165,8 @@ router.get("/seo-data", async (req, res) => {
             runRobotsSitemapAnalysis(baseUrl).catch(() => null),
             generateAiKeywordIdeas(seoData.title, seoData.meta_description, primaryH1, seoData.page_content).catch(() => null),
             runContentAnalysis(resultsTemp).catch(() => null),
-            executePageSpeedAudits(baseUrl, { ...resultsTemp, response_time_ms: crawlResult.response_time_ms }).catch(() => null)
+            executePageSpeedAudits(baseUrl, { ...resultsTemp, response_time_ms: crawlResult.response_time_ms }).catch(() => null),
+            runSubpageAudit(baseUrl, seoData).catch(() => null)
           ]);
 
           const seoReport = group1Results[0];
@@ -173,6 +177,23 @@ router.get("/seo-data", async (req, res) => {
           const keywordIdeas = group1Results[5];
           const contentAnalysis = group1Results[6];
           const pagespeedReport = group1Results[7];
+          const subpageAuditReport = group1Results[8];
+
+          combinedHtml = crawlResult.html || "";
+          if (subpageAuditReport) {
+            if (Array.isArray(subpageAuditReport.audited_subpages)) {
+              subpageAuditReport.audited_subpages.forEach(p => {
+                if (p.html) combinedHtml += "\n" + p.html;
+              });
+            }
+            cleanedSubpageReport = {
+              ...subpageAuditReport,
+              audited_subpages: Array.isArray(subpageAuditReport.audited_subpages)
+                ? subpageAuditReport.audited_subpages.map(({ html, ...rest }) => rest)
+                : []
+            };
+          }
+          crawlResult.subpage_audit_report = cleanedSubpageReport;
 
           const [seoScore, issueSummary] = calculateSeoScoreReport(seoReport);
           const onpageReport = runOnpageAnalysis(seoData, crawlResult);
@@ -259,8 +280,8 @@ router.get("/seo-data", async (req, res) => {
 
       const seededMetrics = getSeededSEOMetrics(domain, seed);
       const aeoGeoMetrics = {
-        ...aeoGeoService.analyzeDomain(domain, fullAudit?.html || null, fullAudit?.html || null, schemaAnalysisReport || fullAudit?.schema_analysis_report),
-        scrapedUrls: fullAudit?.scrapedUrls || [`https://${domain}`]
+        ...aeoGeoService.analyzeDomain(domain, fullAudit?.html || null, combinedHtml, schemaAnalysisReport || fullAudit?.schema_analysis_report),
+        scrapedUrls: fullAudit?.subpage_audit_report?.audited_subpages?.map(p => p.url) || [`https://${domain}`]
       };
 
       const recordData = {
@@ -762,6 +783,34 @@ Do not return any other text, markdown blocks, or code blocks outside the JSON. 
   } catch (error) {
     console.error("Brand Preference API Error:", error);
     return res.status(500).json({ error: "An error occurred on either our side or your network: " + error.message });
+  }
+});
+
+// GET /api/seo-data/ai-visibility-audit/latest
+router.get("/seo-data/ai-visibility-audit/latest", async (req, res) => {
+  const { domain } = req.query;
+  if (!domain) {
+    return res.status(400).json({ error: "domain is required" });
+  }
+  const cleanDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0].toLowerCase();
+  
+  try {
+    const latest = await AiVisibilityAudit.findOne({ domain: cleanDomain }).sort({ createdAt: -1 });
+    if (!latest) {
+      return res.json(null);
+    }
+    return res.json({
+      niche: latest.niche,
+      brandName: latest.brandName,
+      competitors: latest.competitors,
+      prompts: latest.prompts,
+      overallScores: latest.overallScores,
+      shareOfVoice: latest.shareOfVoice,
+      modelBreakdown: latest.modelBreakdown,
+      recommendations: latest.recommendations
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 });
 

@@ -13,6 +13,7 @@ const { runPriorityEngine } = require('../services/priorityEngine.js');
 const { runStructureAnalysis } = require('../services/structureAnalyzer.js');
 const { runChecklistGeneration } = require('../services/checklistGenerator.js');
 const { executePageSpeedAudits } = require('../services/pagespeedService.js');
+const { runSubpageAudit } = require('../services/subpageAuditor.js');
 const {
   generateAiSeoOptimizations,
   generateAiKeywordIdeas,
@@ -22,13 +23,13 @@ const {
 } = require('../services/ai.js');
 
 router.post('/analyze', async (req, res) => {
-  const { url } = req.body;
+  const { url, crawl_subpages = false } = req.body;
 
   if (!url) {
     return res.status(400).json({ detail: "Url is required." });
   }
 
-  console.info(`[AuditRouter] Starting crawl for URL: ${url}`);
+  console.info(`[AuditRouter] Starting crawl for URL: ${url} (crawl_subpages=${crawl_subpages})`);
   const crawlResult = await crawlUrl(url);
 
   let seoData = null;
@@ -51,6 +52,7 @@ router.post('/analyze', async (req, res) => {
   let seoActionPlan = null;
   let healthScore = 0;
   let priorityIssues = [];
+  let cleanedSubpageReport = null;
 
   if (crawlResult.success && crawlResult.html) {
     console.info(`[AuditRouter] Crawl succeeded. Commencing HTML DOM parsing...`);
@@ -103,7 +105,11 @@ router.post('/analyze', async (req, res) => {
         executePageSpeedAudits(baseUrl, { ...resultsTemp, response_time_ms: crawlResult.response_time_ms }).catch(err => {
           console.error("[AuditRouter] Parallel PageSpeed/Lighthouse strategy audits failed:", err);
           return null;
-        })
+        }),
+        crawl_subpages ? runSubpageAudit(baseUrl, seoData).catch(err => {
+          console.error("[AuditRouter] Subpage auditing failed:", err);
+          return null;
+        }) : Promise.resolve(null)
       ]);
 
       seoReport = group1Results[0];
@@ -115,6 +121,17 @@ router.post('/analyze', async (req, res) => {
       keywordIdeas = group1Results[6];
       contentAnalysis = group1Results[7];
       const pagespeedReport = group1Results[8];
+      const subpageAuditReport = group1Results[9];
+
+      if (subpageAuditReport) {
+        cleanedSubpageReport = {
+          ...subpageAuditReport,
+          audited_subpages: Array.isArray(subpageAuditReport.audited_subpages)
+            ? subpageAuditReport.audited_subpages.map(({ html, ...rest }) => rest)
+            : []
+        };
+      }
+      crawlResult.subpage_audit_report = cleanedSubpageReport;
       console.info("[AuditRouter] Concurrency Group 1 complete.");
 
       // Calculate base score
@@ -236,6 +253,21 @@ router.post('/analyze', async (req, res) => {
 
   if (!crawlResult.seo_action_plan) {
     crawlResult.seo_action_plan = seoActionPlan;
+  }
+
+  // Deduplicate subpage audit report if present
+  if (crawlResult.subpage_audit_report && Array.isArray(crawlResult.subpage_audit_report.audited_subpages)) {
+    const seenSub = new Set();
+    const cleanSubpages = [];
+    for (const p of crawlResult.subpage_audit_report.audited_subpages) {
+      const normUrl = (p.url || '').replace(/\/$/, '').toLowerCase();
+      if (normUrl && !seenSub.has(normUrl)) {
+        seenSub.add(normUrl);
+        cleanSubpages.push(p);
+      }
+    }
+    crawlResult.subpage_audit_report.audited_subpages = cleanSubpages;
+    crawlResult.subpage_audit_report.subpages_crawled_count = cleanSubpages.length;
   }
 
   // Persist to MongoDB audits collection

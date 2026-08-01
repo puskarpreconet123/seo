@@ -295,7 +295,7 @@ async function runRobotsSitemapAnalysis(baseUrl) {
   let sitemapExists = false;
   let xmlValid = false;
   let urlCount = 0;
-  const brokenUrls = [];
+  let sitemapUrlsList = [];
   let sitemapStatus = 0;
   let hasLastmod = false;
   let hasPriority = false;
@@ -315,6 +315,7 @@ async function runRobotsSitemapAnalysis(baseUrl) {
 
       if (xmlValid) {
         const urlsList = sitemapParseRes.urls;
+        sitemapUrlsList = urlsList;
         urlCount = urlsList.length;
 
         if (urlCount > 0) {
@@ -326,21 +327,6 @@ async function runRobotsSitemapAnalysis(baseUrl) {
           hasPriority = (priorityCount / urlCount) >= 0.8;
           hasChangefreq = (changefreqCount / urlCount) >= 0.8;
 
-          const sampleUrls = urlsList.slice(0, 5).map(u => {
-            try { return new URL(u.loc, targetSitemapUrl).href; } catch (e) { return null; }
-          }).filter(Boolean);
-
-          const chkResults = await Promise.all(sampleUrls.map(u => fetchUrlStatus(u)));
-          for (const cr of chkResults) {
-            const [u, code, isOk] = cr;
-            if (!isOk) {
-              brokenUrls.push(u);
-            }
-          }
-
-          if (brokenUrls.length > 0) {
-            sitemapScore -= Math.min(45.0, brokenUrls.length * 15.0);
-          }
           if (!hasLastmod) sitemapScore -= 10.0;
           if (!hasPriority) sitemapScore -= 10.0;
           if (!hasChangefreq) sitemapScore -= 10.0;
@@ -388,17 +374,6 @@ async function runRobotsSitemapAnalysis(baseUrl) {
           check_name: "Sitemap URL Count",
           message: `XML sitemap contains ${urlCount} page URL declarations.`
         });
-        if (brokenUrls.length > 0) {
-          critical.push({
-            check_name: "Sitemap Broken URLs Check",
-            message: `Sitemap audit checked a sample and detected ${brokenUrls.length} broken URL(s) (returning >= 400 or timeouts).`
-          });
-        } else {
-          passed.push({
-            check_name: "Sitemap Broken URLs Check",
-            message: "Verified a sample of URLs in the sitemap; all returned healthy status codes."
-          });
-        }
         if (!hasLastmod) {
           warnings.push({
             check_name: "Sitemap Last Modified Header",
@@ -441,9 +416,6 @@ async function runRobotsSitemapAnalysis(baseUrl) {
     if (!xmlValid) {
       suggestions.push("Rebuild sitemap XML payload; resolve invalid node nesting or unescaped characters in locations.");
     } else {
-      if (brokenUrls.length > 0) {
-        suggestions.push(`Remove or replace the ${brokenUrls.length} broken URLs in the sitemap sample returning 4xx/5xx errors.`);
-      }
       if (!hasLastmod) {
         suggestions.push("Populate the `<lastmod>` date node for all URLs in sitemap to help engines detect changes.");
       }
@@ -460,7 +432,7 @@ async function runRobotsSitemapAnalysis(baseUrl) {
     suggestions.push("Incredible! Both robots.txt and sitemap records are fully populated, structurally valid, and fully optimized.");
   }
 
-  return {
+  const initialReport = {
     robots_report: {
       exists: robotsExists,
       syntax_valid: robotsSyntaxValid,
@@ -475,18 +447,140 @@ async function runRobotsSitemapAnalysis(baseUrl) {
       exists: sitemapExists,
       xml_valid: xmlValid,
       url_count: urlCount,
-      broken_urls: brokenUrls,
+      broken_urls: [],
       status_code: sitemapStatus,
       has_lastmod: hasLastmod,
       has_priority: hasPriority,
       has_changefreq: hasChangefreq,
-      score: Math.max(0, Math.min(100, Math.floor(sitemapScore)))
+      score: Math.max(0, Math.min(100, Math.floor(sitemapScore))),
+      is_checking: true
     },
     passed,
     warnings,
     critical,
     optimization_suggestions: suggestions
   };
+
+  // Trigger non-blocking sitemap link checks in background if valid URLs exist
+  if (sitemapExists && xmlValid && urlCount > 0 && sitemapUrlsList.length > 0) {
+    triggerBackgroundSitemapCheck(targetSitemapUrl, sitemapUrlsList, rootDomain, hasLastmod, hasPriority, hasChangefreq, initialReport);
+  }
+
+  return initialReport;
+}
+
+// Background validation worker for checking all sitemap links
+function triggerBackgroundSitemapCheck(targetSitemapUrl, urlsList, rootDomain, hasLastmod, hasPriority, hasChangefreq, initialReport) {
+  Promise.resolve().then(async () => {
+    console.info(`[SitemapBackgroundCheck] Starting background sitemap link validation of ${urlsList.length} URLs for domain "${rootDomain}"...`);
+    const brokenUrls = [];
+    const concurrency = 8;
+    const delayMs = 150;
+    
+    for (let i = 0; i < urlsList.length; i += concurrency) {
+      const batch = urlsList.slice(i, i + concurrency).map(u => {
+        try { return new URL(u.loc, targetSitemapUrl).href; } catch (e) { return null; }
+      }).filter(Boolean);
+
+      const chkResults = await Promise.all(batch.map(u => fetchUrlStatus(u)));
+      for (const cr of chkResults) {
+        const [u, code, isOk] = cr;
+        if (!isOk) {
+          brokenUrls.push([u, code]);
+        }
+      }
+      
+      if (i + concurrency < urlsList.length) {
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+    
+    console.info(`[SitemapBackgroundCheck] Finished checking. Detected ${brokenUrls.length} broken sitemap links.`);
+
+    // Recalculate score
+    let sitemapScore = 100.0;
+    if (brokenUrls.length > 0) {
+      sitemapScore -= Math.min(45.0, brokenUrls.length * 5.0);
+    }
+    if (!hasLastmod) sitemapScore -= 10.0;
+    if (!hasPriority) sitemapScore -= 10.0;
+    if (!hasChangefreq) sitemapScore -= 10.0;
+    if (urlsList.length > 50000) sitemapScore -= 10.0;
+
+    const finalSitemapScore = Math.max(0, Math.min(100, Math.floor(sitemapScore)));
+
+    const passed = [...initialReport.passed];
+    const warnings = [...initialReport.warnings];
+    const critical = [...initialReport.critical];
+    const suggestions = [...initialReport.optimization_suggestions];
+
+    const cleanPassed = passed.filter(p => p.check_name !== "Sitemap Broken URLs Check");
+    const cleanCritical = critical.filter(c => c.check_name !== "Sitemap Broken URLs Check");
+    const cleanSuggestions = suggestions.filter(s => !s.includes("broken URL") && !s.includes("sitemap sample"));
+
+    if (brokenUrls.length > 0) {
+      cleanCritical.push({
+        check_name: "Sitemap Broken URLs Check",
+        message: `Sitemap audit scanned all URLs and detected ${brokenUrls.length} broken URL(s) (returning >= 400 or timeouts).`
+      });
+      cleanSuggestions.push(`Remove or replace the ${brokenUrls.length} broken URLs in the sitemap returning 4xx/5xx errors.`);
+    } else {
+      cleanPassed.push({
+        check_name: "Sitemap Broken URLs Check",
+        message: `Verified all ${urlsList.length} URLs in the sitemap; all returned healthy status codes.`
+      });
+    }
+
+    const updatedReport = {
+      robots_report: initialReport.robots_report,
+      sitemap_report: {
+        ...initialReport.sitemap_report,
+        broken_urls: brokenUrls,
+        score: finalSitemapScore,
+        is_checking: false
+      },
+      passed: cleanPassed,
+      warnings,
+      critical: cleanCritical,
+      optimization_suggestions: cleanSuggestions
+    };
+
+    // Clean origin URL schema prefix to match hostname key saved in Database
+    let cleanDomain = rootDomain;
+    try {
+      const parsed = new URL(rootDomain);
+      cleanDomain = parsed.hostname.toLowerCase();
+    } catch (e) {
+      cleanDomain = rootDomain.replace(/https?:\/\//, "").split("/")[0].toLowerCase();
+    }
+
+    // Update document in database/cache
+    try {
+      if (global.useMemoryDb) {
+        const record = global.memoryDb.seoRecords.get(cleanDomain);
+        if (record) {
+          record.fullAudit = record.fullAudit || {};
+          record.fullAudit.robots_sitemap_report = updatedReport;
+          global.memoryDb.seoRecords.set(cleanDomain, record);
+          console.info(`[SitemapBackgroundCheck] Successfully updated Memory DB for "${cleanDomain}".`);
+        }
+      } else {
+        const SEORecord = require('../models/SEORecord');
+        const record = await SEORecord.findOne({ domain: cleanDomain });
+        if (record) {
+          record.fullAudit = record.fullAudit || {};
+          record.fullAudit.robots_sitemap_report = updatedReport;
+          record.markModified('fullAudit');
+          await record.save();
+          console.info(`[SitemapBackgroundCheck] Successfully updated MongoDB document for "${cleanDomain}".`);
+        }
+      }
+    } catch (dbErr) {
+      console.error(`[SitemapBackgroundCheck] Failed to save updated record to database:`, dbErr.message);
+    }
+  }).catch(err => {
+    console.error(`[SitemapBackgroundCheck] Unexpected background execution error:`, err.message);
+  });
 }
 
 module.exports = { runRobotsSitemapAnalysis };
