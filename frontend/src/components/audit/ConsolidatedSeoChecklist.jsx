@@ -1,36 +1,79 @@
 import React, { useState, useEffect } from 'react';
+import { useSeo } from '@/context/SeoContext';
 import { ListChecks, CheckCircle2, XCircle } from 'lucide-react';
 
-const CHECKLIST_DATA = []
-
 const priorityConfig = {
-  'High': 'bg-rose-500 text-white',
-  'Medium': 'bg-amber-400 text-white',
-  'Low': 'bg-slate-500 text-white',
+  'CRITICAL': 'bg-rose-600 text-white',
+  'HIGH': 'bg-rose-500 text-white',
+  'MEDIUM': 'bg-amber-500 text-white',
+  'LOW': 'bg-slate-400 text-white'
 };
 
-const filterTabs = [
-  'All (30)',
-  'Technical SEO (5/5)',
-  'On Page SEO (5/5)',
-  'Content SEO (2/5)',
-  'Image SEO (3/3)',
-  'Schema (0/3)',
-  'Performance (0/5)',
-  'Links (2/4)'
-];
-
 export default function ConsolidatedSeoChecklist() {
-  const [activeTab, setActiveTab] = useState('All (30)');
+  const { seoData } = useSeo();
+  
+  const checklist = seoData?.website?.fullAudit?.seo_checklist || seoData?.fullAudit?.seo_checklist || null;
+
+  // Flatten categories into checklistItems format
+  const checklistItems = [];
+  const filterTabs = ['All'];
+  let totalCompleted = 0;
+  let totalCount = 0;
+
+  if (checklist && Array.isArray(checklist.categories)) {
+    totalCompleted = checklist.categories.reduce((acc, cat) => acc + (cat.completed_count || 0), 0);
+    totalCount = checklist.categories.reduce((acc, cat) => acc + (cat.total_count || 0), 0);
+
+    checklist.categories.forEach(cat => {
+      filterTabs.push(`${cat.category_name} (${cat.completed_count}/${cat.total_count})`);
+
+      if (Array.isArray(cat.items)) {
+        cat.items.forEach(item => {
+          checklistItems.push({
+            status: item.status === 'Completed' ? 'success' : 'fail',
+            check: item.name || '',
+            category: cat.category_name,
+            recommendation: item.recommendation || '',
+            priority: (item.priority || 'LOW').toUpperCase()
+          });
+        });
+      }
+    });
+
+    filterTabs[0] = `All (${totalCompleted}/${totalCount})`;
+  } else {
+    // Default fallback values if no checklist data is present yet
+    filterTabs.push(
+      'Technical SEO (0/0)',
+      'On Page SEO (0/0)',
+      'Content SEO (0/0)',
+      'Image SEO (0/0)',
+      'Schema (0/0)',
+      'Performance (0/0)',
+      'Links (0/0)'
+    );
+  }
+
+  const [activeTab, setActiveTab] = useState(null);
+
+  useEffect(() => {
+    if (filterTabs.length > 0) {
+      const exists = filterTabs.includes(activeTab);
+      if (!exists) {
+        setActiveTab(filterTabs[0]);
+      }
+    }
+  }, [seoData, activeTab]);
 
   const getFilteredData = () => {
-    if (activeTab === 'All (30)') return CHECKLIST_DATA;
+    if (!activeTab || activeTab.startsWith('All')) return checklistItems;
     // Extract base category name (e.g. 'Technical SEO' from 'Technical SEO (5/5)')
     const categoryName = activeTab.replace(/\s\(\d+\/\d+\)$/, '');
-    return CHECKLIST_DATA.filter(item => item.category === categoryName);
+    return checklistItems.filter(item => item.category === categoryName);
   };
 
   const filteredData = getFilteredData();
+  const progressPercent = totalCount > 0 ? Math.round((totalCompleted / totalCount) * 100) : 0;
 
   return (
     <>
@@ -68,14 +111,14 @@ export default function ConsolidatedSeoChecklist() {
           <div className="w-full sm:w-48 h-2.5 bg-slate-100 rounded-full overflow-hidden relative shadow-inner">
             <div 
               className="absolute top-0 left-0 h-full bg-blue-500 rounded-full" 
-              style={{ width: `56%` }}
+              style={{ width: `${progressPercent}%` }}
             >
               {/* Continuous barber pole background animation */}
               <div className="absolute inset-0 animate-stripes" />
             </div>
           </div>
           <span className="text-sm font-bold text-blue-600 whitespace-nowrap w-24 text-right">
-            56% Completed
+            {progressPercent}% Completed
           </span>
         </div>
       </div>

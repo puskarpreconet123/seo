@@ -17,7 +17,12 @@ import {
   Check,
   Target,
   Brain,
-  RotateCw
+  RotateCw,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  ExternalLink,
+  Clock
 } from "lucide-react";
 
 export default function TechnicalAeoPage() {
@@ -28,6 +33,7 @@ export default function TechnicalAeoPage() {
   const [loadingFix, setLoadingFix] = useState({});
   const [copiedFixKey, setCopiedFixKey] = useState(null);
   const [expandedFix, setExpandedFix] = useState(null);
+  const [expandedSubpage, setExpandedSubpage] = useState(null);
 
   if (!seoData) {
     return (
@@ -90,6 +96,7 @@ export default function TechnicalAeoPage() {
   const aeoScore = geoDataObj.aeoScore || 0;
   const schemaAnalysis = geoDataObj.schemaAnalysis || {};
   const scrapedUrls = geoDataObj.scrapedUrls || [];
+  const subpageReport = seoData?.website?.fullAudit?.subpage_audit_report || null;
 
   const topIssuesList = seoData.website?.technicalAudit?.topIssues || [];
   const titleIssues = topIssuesList.filter(issue => (issue?.message || issue?.issue || issue?.title || "").toLowerCase().includes("title"));
@@ -274,32 +281,135 @@ export default function TechnicalAeoPage() {
             </div>
           </div>
 
-          {/* Scraped URL subpages */}
+          {/* Scraped URL subpages / Detailed Audited Subpages */}
           <div className="flex-1 bg-white p-6 rounded-3xl border border-slate-200 shadow-md flex flex-col mt-2">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
               <h4 className="text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center gap-2">
                 <Server className="w-4 h-4 text-rankgenie-orange" />
                 Audited URL Subpages
               </h4>
               <span className="px-2.5 py-0.5 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-mono text-slate-500">
-                {scrapedUrls.length} Scraped
+                {scrapedUrls.length} Pages Crawled
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-40 flex flex-col gap-2.5 pr-1">
-              {scrapedUrls.length > 0 ? (
-                scrapedUrls.map((urlStr, uIdx) => (
-                  <div key={uIdx} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs font-mono font-medium text-slate-600 shadow-sm">
-                    <span className="truncate max-w-[280px]">{urlStr}</span>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            {subpageReport ? (
+              <div className="space-y-4 flex-1 flex flex-col min-h-0">
+                {/* Summary Metrics Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-center">
+                  <div>
+                    <span className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold">Avg SEO Score</span>
+                    <span className="text-lg font-black text-slate-800">{subpageReport.average_subpage_score || 0}</span>
                   </div>
-                ))
-              ) : (
-                <p className="text-xs text-slate-400 font-bold my-auto text-center w-full">
-                  No subpages crawled. Set up your site configuration structure to crawl /about and /contact.
-                </p>
-              )}
-            </div>
+                  <div>
+                    <span className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold">Broken Pages</span>
+                    <span className={`text-lg font-black ${subpageReport.summary_issues?.broken_subpages_count > 0 ? 'text-red-500' : 'text-slate-800'}`}>
+                      {subpageReport.summary_issues?.broken_subpages_count || 0}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold">Missing Title/Desc</span>
+                    <span className="text-lg font-black text-slate-800">
+                      {(subpageReport.summary_issues?.missing_title_count || 0) + 
+                       (subpageReport.summary_issues?.missing_description_count || 0)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold">Missing Alt Tags</span>
+                    <span className="text-lg font-black text-slate-800">{subpageReport.summary_issues?.total_missing_alt_images || 0}</span>
+                  </div>
+                </div>
+
+                {/* Subpage List & Expandable issues */}
+                <div className="flex-1 overflow-y-auto max-h-[300px] pr-1 space-y-2">
+                  {subpageReport.audited_subpages && 
+                   subpageReport.audited_subpages.length > 0 ? (
+                    subpageReport.audited_subpages.map((page, idx) => {
+                      const isExpanded = expandedSubpage === idx;
+                      const scoreColor = page.score >= 80 ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 
+                                         page.score >= 50 ? 'text-amber-600 bg-amber-50 border-amber-200' : 
+                                         'text-rose-600 bg-rose-50 border-rose-200';
+                      
+                      return (
+                        <div key={idx} className="border border-slate-100 rounded-xl bg-white overflow-hidden shadow-sm transition-all hover:border-slate-200">
+                          <div 
+                            onClick={() => setExpandedSubpage(isExpanded ? null : idx)}
+                            className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-slate-50/50 transition-colors"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold ${scoreColor}`}>
+                                {page.score}
+                              </span>
+                              <span className="text-xs font-mono font-medium text-slate-600 truncate max-w-[200px] sm:max-w-xs md:max-w-md">
+                                {page.url}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2.5 shrink-0 ml-2">
+                              <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${page.status_code >= 200 && page.status_code < 300 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                {page.status_code}
+                              </span>
+                              {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                            </div>
+                          </div>
+
+                          {isExpanded && (
+                            <div className="border-t border-slate-50 bg-slate-50/30 p-3.5 text-xs text-slate-600 space-y-3">
+                              {/* Page Metrics Details */}
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 font-medium border-b border-slate-100 pb-2">
+                                <div><span className="text-slate-400 font-semibold mr-1">Title:</span> <span className="font-semibold text-slate-700">{page.title || <span className="text-red-500 font-bold">Missing</span>}</span></div>
+                                <div><span className="text-slate-400 font-semibold mr-1">Word Count:</span> <span className="font-bold text-slate-700">{page.word_count || 0} words</span></div>
+                                <div className="col-span-2 truncate"><span className="text-slate-400 font-semibold mr-1">Desc:</span> <span className="text-slate-700">{page.meta_description || <span className="text-red-500 font-bold">Missing</span>}</span></div>
+                                <div><span className="text-slate-400 font-semibold mr-1">H1 / H2 Count:</span> <span className="text-slate-700 font-bold">{page.h1_count || 0} H1, {page.h2_count || 0} H2</span></div>
+                                <div><span className="text-slate-400 font-semibold mr-1">Load Time:</span> <span className="text-slate-700 flex items-center gap-1 font-bold"><Clock className="w-3 h-3 text-slate-400" /> {page.response_time_ms}ms</span></div>
+                              </div>
+
+                              {/* Issues List */}
+                              <div className="space-y-1.5">
+                                <span className="font-bold text-[10px] text-slate-400 uppercase tracking-wider block">Audits & Warning Diagnostics</span>
+                                {page.issues && page.issues.length > 0 ? (
+                                  page.issues.map((issueStr, issueIdx) => (
+                                    <div key={issueIdx} className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50/50 border border-amber-100/50 p-2 rounded-lg">
+                                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                      <span className="font-medium">{issueStr}</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50/50 border border-emerald-100/50 p-2 rounded-lg">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                    <span className="font-bold">Passed all core technical SEO audits!</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-xs text-slate-400 font-bold my-auto text-center w-full">
+                      No subpage audits stored.
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Fallback simple list of crawled URLs if detailed reports are missing */
+              <div className="flex-1 overflow-y-auto max-h-40 flex flex-col gap-2.5 pr-1">
+                {scrapedUrls.length > 0 ? (
+                  scrapedUrls.map((urlStr, uIdx) => (
+                    <div key={uIdx} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs font-mono font-medium text-slate-600 shadow-sm">
+                      <span className="truncate max-w-[280px]">{urlStr}</span>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-400 font-bold my-auto text-center w-full">
+                    No subpages crawled. Set up your site configuration structure to crawl /about and /contact.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
         </div>

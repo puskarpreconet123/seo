@@ -1,29 +1,45 @@
 "use client";
 
 import React from 'react';
+import { useSeo } from '@/context/SeoContext';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell,
   AreaChart, Area 
 } from 'recharts';
 
 export default function PerformanceCharts() {
+  const { seoData } = useSeo();
+  const desktopData = seoData?.website?.fullAudit?.desktop || seoData?.website?.fullAudit?.pagespeed?.desktop || null;
+  const mainCrawlTime = seoData?.website?.technicalAudit?.responseTime || 0;
+
+  const hasLivePerformanceData = desktopData && desktopData.success === true;
+
+  const metrics = hasLivePerformanceData ? (desktopData?.metrics || {}) : {};
+
+  const fcpMs = hasLivePerformanceData ? ((metrics.first_contentful_paint || 0) * 1000) : 0;
+  const lcpMs = hasLivePerformanceData ? ((metrics.largest_contentful_paint || 0) * 1000) : 0;
+  const tbtMs = hasLivePerformanceData ? (metrics.total_blocking_time || 0) : 0;
+  const ttfbMs = hasLivePerformanceData ? mainCrawlTime : 0;
+  const loadTimeMs = hasLivePerformanceData ? ((metrics.interactive ? (metrics.interactive * 1000) : (mainCrawlTime * 2)) || 0) : 0;
+
   // Data for the Performance Metrics Horizontal Bar Chart
-  // The UI displays FCP, LCP, INP, TTFB, Load Time from top to bottom
   const barData = [
-    { name: 'FCP', duration: 2130.51, color: '#38bdf8' },
-    { name: 'LCP', duration: 3500.00, color: '#22d3ee' },
-    { name: 'INP', duration: 50.00, color: '#a78bfa' },
-    { name: 'TTFB', duration: 1300.00, color: '#818cf8' },
-    { name: 'Load Time', duration: 8000.00, color: '#c084fc' },
+    { name: 'FCP', duration: Math.round(fcpMs), color: '#38bdf8' },
+    { name: 'LCP', duration: Math.round(lcpMs), color: '#22d3ee' },
+    { name: 'TBT', duration: Math.round(tbtMs), color: '#a78bfa' },
+    { name: 'TTFB', duration: Math.round(ttfbMs), color: '#818cf8' },
+    { name: 'Load Time', duration: Math.round(loadTimeMs), color: '#c084fc' },
   ];
 
   // Data for Audit Execution Speed Area Chart
   const areaData = [
-    { stage: 'Server Connect', time: 1000 },
-    { stage: 'TTFB Latency', time: 1000 },
-    { stage: 'FCP Paint', time: 2130 },
-    { stage: 'Page Load Complete', time: 8000 },
+    { stage: 'Server Connect', time: Math.round(ttfbMs * 0.4) },
+    { stage: 'TTFB Latency', time: Math.round(ttfbMs) },
+    { stage: 'FCP Paint', time: Math.round(fcpMs) },
+    { stage: 'Page Load Complete', time: Math.round(loadTimeMs) },
   ];
+
+  const maxVal = Math.max(8000, Math.round(loadTimeMs * 1.1));
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-6">
@@ -44,7 +60,7 @@ export default function PerformanceCharts() {
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
               <XAxis 
                 type="number" 
-                domain={[0, 8000]}
+                domain={[0, maxVal]}
                 tick={{ fill: '#94a3b8', fontSize: 12 }} 
                 axisLine={false}
                 tickLine={false}
@@ -68,7 +84,7 @@ export default function PerformanceCharts() {
                 }}
                 itemStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}
                 formatter={(value) => [`Duration (ms): ${value}`]}
-                labelStyle={{ display: 'none' }} // Customizing the tooltip to match screenshot style
+                labelStyle={{ display: 'none' }}
               />
               <Bar dataKey="duration" radius={[0, 4, 4, 0]} barSize={28}>
                 {barData.map((entry, index) => (
@@ -107,8 +123,7 @@ export default function PerformanceCharts() {
                 dy={10}
               />
               <YAxis 
-                domain={[0, 8000]}
-                ticks={[0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000]}
+                domain={[0, maxVal]}
                 axisLine={false} 
                 tickLine={false} 
                 tick={{ fill: '#94a3b8', fontSize: 12 }} 

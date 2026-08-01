@@ -67,7 +67,9 @@ export default function AuditPage() {
               <span className="w-1 h-1 rounded-full bg-slate-300"></span>
               <span>JS rendering: Disabled</span>
               <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-              <span className="text-slate-500 font-bold">Pages crawled: 43/100</span>
+              <span className="text-slate-500 font-bold">
+                Pages crawled: {seoData?.website?.fullAudit?.subpage_audit_report?.subpages_crawled_count || 1}/100
+              </span>
             </div>
           </div>
 

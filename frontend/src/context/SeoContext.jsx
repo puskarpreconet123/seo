@@ -54,6 +54,33 @@ export function SeoProvider({ children }) {
     };
   }, [currentDomain, triggerRefresh]);
 
+  // Set up background polling if an audit/check is currently running in the background
+  useEffect(() => {
+    const isChecking = seoData?.website?.fullAudit?.robots_sitemap_report?.sitemap_report?.is_checking;
+    if (!isChecking || isLoading) return;
+
+    const pollInterval = setInterval(() => {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+      fetch(`${API_BASE_URL}/api/seo-data?domain=${encodeURIComponent(currentDomain)}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+        })
+        .then((data) => {
+          if (data) {
+            // Verify if is_checking status has changed or resolved
+            const stillChecking = data?.website?.fullAudit?.robots_sitemap_report?.sitemap_report?.is_checking;
+            setSeoData(data);
+            if (!stillChecking) {
+              clearInterval(pollInterval);
+            }
+          }
+        })
+        .catch((err) => console.error("Polling background updates error:", err));
+    }, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [seoData, currentDomain, isLoading]);
+
   const handleSearch = (newDomain) => {
     let clean = newDomain.trim().toLowerCase();
     if (clean.includes("://")) {

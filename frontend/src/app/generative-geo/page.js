@@ -280,6 +280,60 @@ export default function GenerativeGeoPage() {
 
       </div>
 
+      {/* AI Search Query Simulator accordion */}
+      <div className="space-y-4">
+        <h4 className="text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center gap-2">
+          <Bot className="w-4 h-4 text-purple-600" />
+          Simulated AI Search Engine Query Responses
+        </h4>
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 space-y-4">
+          {geoDataObj.aiSearchSimulator && geoDataObj.aiSearchSimulator.length > 0 ? (
+            geoDataObj.aiSearchSimulator.map((sim, sIdx) => (
+              <div key={sIdx} className="border border-slate-100 rounded-2xl bg-slate-50/50 p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b border-slate-200/60">
+                  <span className="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-2">
+                    <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                    "{sim.query}"
+                  </span>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shrink-0 ${
+                    sim.isDomainCited 
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-600" 
+                      : "bg-rose-50 border-rose-200 text-rose-500"
+                  }`}>
+                    {sim.isDomainCited ? "Cited / Recommended" : "Not Cited"}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-600 leading-relaxed bg-white border border-slate-100 rounded-xl p-3.5 shadow-sm">
+                  {sim.aiResponse}
+                </div>
+                {sim.citations && sim.citations.length > 0 && (
+                  <div className="text-[10px] font-medium text-slate-400 space-y-1">
+                    <span className="font-bold text-slate-500 uppercase tracking-wider block">Citations & References:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {sim.citations.map((cite, cIdx) => (
+                        <a 
+                          key={cIdx} 
+                          href={cite} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-500 font-mono transition-colors truncate max-w-[200px]"
+                        >
+                          [{cIdx + 1}] {cite.replace(/^https?:\/\//, "")}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-xs text-slate-400 font-bold text-center py-4">
+              No AI search simulations pre-computed for this domain. Rerun your main crawl to generate.
+            </p>
+          )}
+        </div>
+      </div>
+
       {/* Resolutions checklist */}
       <div className="space-y-4">
         <h4 className="text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center gap-2">

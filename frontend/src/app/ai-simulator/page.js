@@ -29,14 +29,38 @@ export default function AiSimulatorPage() {
   const [auditError, setAuditError] = useState(null);
   const [auditResults, setAuditResults] = useState(null);
 
-  // Sync default brand name and URL when currentDomain changes
+  // Sync default brand name and URL, and auto-load latest cached audit results when currentDomain changes
   useEffect(() => {
-    if (currentDomain) {
-      const cleanDom = getCleanDomain(currentDomain);
-      const brandNameOnly = cleanDom.split(".")[0];
-      setAuditUrl(currentDomain);
-      setAuditBrand(brandNameOnly);
-    }
+    if (!currentDomain) return;
+
+    const cleanDom = getCleanDomain(currentDomain);
+    const brandNameOnly = cleanDom.split(".")[0];
+    setAuditUrl(currentDomain);
+    setAuditBrand(brandNameOnly);
+
+    // Auto-fetch latest visibility audit results
+    const fetchLatestAudit = async () => {
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+        const res = await fetch(`${API_BASE_URL}/api/seo-data/ai-visibility-audit/latest?domain=${encodeURIComponent(cleanDom)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            setAuditResults(data);
+            setAuditBrand(data.brandName || brandNameOnly);
+            setAuditUrl(cleanDom);
+            setAuditNiche(data.niche || "");
+            if (data.competitors && data.competitors.length > 0) {
+              setAuditCompetitors(data.competitors.join(", "));
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch latest visibility audit:", err);
+      }
+    };
+
+    fetchLatestAudit();
   }, [currentDomain]);
 
   if (!seoData) {

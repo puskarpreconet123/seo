@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSeo } from '@/context/SeoContext';
 import { 
   ClipboardList, Calendar, Trophy, Zap, Rocket, TrendingUp, Clock, Check
 } from 'lucide-react';
@@ -56,8 +57,47 @@ const TABS = [
 ];
 
 export default function SeoPriorityActionPlan() {
+  const { seoData } = useSeo();
   const [activeTab, setActiveTab] = useState('TODAY');
   const [tasks, setTasks] = useState(ALL_TASKS);
+
+  const actionPlan = seoData?.website?.fullAudit?.seo_action_plan || seoData?.fullAudit?.seo_action_plan || null;
+
+  useEffect(() => {
+    if (actionPlan) {
+      const mappedTasks = [];
+      let idCounter = 1;
+
+      const categories = [
+        { key: 'today', label: 'TODAY' },
+        { key: 'this_week', label: 'THIS WEEK' },
+        { key: 'this_month', label: 'THIS MONTH' },
+        { key: 'top_10_fixes', label: 'TOP 10 FIXES' },
+        { key: 'quick_wins', label: 'QUICK WINS' },
+        { key: 'high_impact_tasks', label: 'HIGH IMPACT' },
+        { key: 'long_term_improvements', label: 'LONG TERM' }
+      ];
+
+      categories.forEach(cat => {
+        const list = actionPlan[cat.key] || [];
+        list.forEach(item => {
+          mappedTasks.push({
+            id: idCounter++,
+            tab: cat.label,
+            priority: (item.priority || 'MEDIUM').toUpperCase(),
+            difficulty: item.difficulty || 'Easy',
+            time: item.estimated_time || '30 mins',
+            title: item.title || 'SEO Optimization',
+            desc: item.description || '',
+            completed: false
+          });
+        });
+      });
+      setTasks(mappedTasks);
+    } else {
+      setTasks(ALL_TASKS);
+    }
+  }, [seoData]);
   
   const displayTasks = tasks.filter(t => t.tab === activeTab);
   
@@ -89,13 +129,13 @@ export default function SeoPriorityActionPlan() {
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-medium text-slate-500">Improvement:</span>
             <span className="px-3 py-1 rounded-md bg-emerald-600 text-white font-bold text-[12px]">
-              +20-25% Search Traffic Potential
+              {actionPlan?.estimated_seo_improvement || "+20-25% Search Traffic Potential"}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-medium text-slate-500">Est. Effort:</span>
             <span className="font-bold text-slate-800 text-[13px]">
-              8-10 hours total
+              {actionPlan?.estimated_completion_time || "8-10 hours total"}
             </span>
           </div>
         </div>
